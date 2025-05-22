@@ -3,8 +3,7 @@
     public class ItemOrder
     {
         public int ItemOrderId { get; set; }
-        public int OrderId { get; set; }
-        public int VehicleId { get; set; }
+        public Guid VehicleId { get; set; }
         public int Amount { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal TotalPrice { get; set; }

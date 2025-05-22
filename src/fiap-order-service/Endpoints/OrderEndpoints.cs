@@ -47,6 +47,16 @@ namespace fiap_order_service.Endpoints
                     var createdOrder = await _orderService.CreateOrderAsync(order);
                     return Results.Created($"/orders/{createdOrder.OrderId}", createdOrder);
                 }
+                catch(KeyNotFoundException ex)
+                {
+                    _logger.LogError(ex, "Veículo não encontrado");
+                    return Results.NotFound(ex.Message);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    _logger.LogError(ex, "Erro ao criar compra");
+                    return Results.Problem(title: "Erro ao criar compra", detail: ex.Message);
+                }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Erro ao buscar veículos");

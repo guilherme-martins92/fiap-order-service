@@ -2,7 +2,7 @@
 {
     public class ItemOrderDto
     {
-        public int VehicleId { get; set; }
+        public Guid VehicleExternalId { get; set; }
         public int Amount { get; set; }
     }
 }

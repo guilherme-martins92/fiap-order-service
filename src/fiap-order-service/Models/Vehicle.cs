@@ -3,11 +3,6 @@
     public class Vehicle
     {
         /// <summary>
-        /// Unique identifier for the vehicle.
-        /// </summary>
-        public int Id { get; set; }
-
-        /// <summary>
         /// Unique identifier for the vehicle in an external system.
         /// </summary>
         public Guid ExternalId { get; set; }

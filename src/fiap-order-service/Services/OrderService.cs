@@ -1,4 +1,5 @@
 ﻿using fiap_order_service.Dtos;
+using fiap_order_service.Infrastructure.HttpClients;
 using fiap_order_service.Models;
 using fiap_order_service.Repositories;
 
@@ -7,12 +8,12 @@ namespace fiap_order_service.Services
     public class OrderService : IOrderService
     {
         private readonly IOrderRepository _orderRepository;
-        private readonly ILogger<OrderService> _logger;
+        private readonly ICatalogService _catalogService;
 
-        public OrderService(IOrderRepository orderRepository, ILogger<OrderService> logger)
+        public OrderService(IOrderRepository orderRepository, ICatalogService catalogService)
         {
             _orderRepository = orderRepository;
-            _logger = logger;
+            _catalogService = catalogService;
         }
 
         public async Task<Order> CreateOrderAsync(OrderDto orderDto)
@@ -22,12 +23,32 @@ namespace fiap_order_service.Services
 
             var order = new Order
             {
+                OrderId = Guid.NewGuid(),
                 CustomerDocument = orderDto.CustomerDocument,
                 CustomerName = orderDto.CustomerName,
                 CustomerEmail = orderDto.CustomerEmail,
                 Status = Order.OrderStatus.Created,
-                CreatedDate = DateTime.UtcNow
+                CreatedDate = DateTime.UtcNow,
+                UpdatedDate = DateTime.UtcNow
             };
+
+            foreach (var item in orderDto.Itens)
+            {
+                var vehicle = await _catalogService.GetVehicleByIdAsync(item.VehicleExternalId);
+
+                if (vehicle == null)
+                    throw new KeyNotFoundException($"Vehicle with ID {item.VehicleExternalId} not found");
+
+                order.Itens.Add(new ItemOrder
+                {
+                    VehicleId = vehicle.ExternalId,
+                    UnitPrice = vehicle.Price,
+                    Amount = item.Amount,
+                    TotalPrice = vehicle.Price * item.Amount,
+                    CreatedDate = DateTime.UtcNow,
+                    UpdatedDate = DateTime.UtcNow
+                });
+            }
 
             var createdOrder = await _orderRepository.CreateOrderAsync(order);
 

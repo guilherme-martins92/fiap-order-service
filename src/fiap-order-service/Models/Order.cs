@@ -2,7 +2,7 @@
 {
     public class Order
     {
-        public int OrderId { get; set; }
+        public Guid OrderId { get; set; }
         public required string CustomerDocument { get; set; }
         public required string CustomerName { get; set; }
         public required string CustomerEmail { get; set; }
