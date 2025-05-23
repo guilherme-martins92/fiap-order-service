@@ -26,7 +26,7 @@ namespace fiap_order_service.Endpoints
             .WithName("GetAllOrders")
             .WithOpenApi();
 
-            app.MapGet("/orders/{id}", async (int id) =>
+            app.MapGet("/orders/{id}", async (Guid id) =>
             {
                 _logger.LogInformation("Buscando compra com ID: {Id}", id);
                 var order = await _orderService.GetOrderByIdAsync(id);
@@ -66,10 +66,10 @@ namespace fiap_order_service.Endpoints
             .WithName("CreateOrder")
             .WithOpenApi();
 
-            app.MapPut("/orders/{id}", async (int id, Order order) =>
+            app.MapPut("/orders/{id}", async (Guid id, Order order) =>
             {
                 _logger.LogInformation("Atualizando compra com ID: {Id}", id);
-                var updatedOrder = await _orderService.UpdateOrderAsync(id, order);
+                var updatedOrder = await _orderService.UpdateStatusOrderAsync(id, order);
                 if (updatedOrder == null)
                 {
                     return Results.NotFound();

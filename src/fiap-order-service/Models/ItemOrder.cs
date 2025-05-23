@@ -2,7 +2,6 @@
 {
     public class ItemOrder
     {
-        public int ItemOrderId { get; set; }
         public Guid VehicleId { get; set; }
         public int Amount { get; set; }
         public decimal UnitPrice { get; set; }

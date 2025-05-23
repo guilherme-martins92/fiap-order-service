@@ -1,4 +1,5 @@
-﻿using fiap_order_service.Dtos;
+﻿using fiap_order_service.Constants;
+using fiap_order_service.Dtos;
 using fiap_order_service.Infrastructure.HttpClients;
 using fiap_order_service.Models;
 using fiap_order_service.Repositories;
@@ -19,7 +20,7 @@ namespace fiap_order_service.Services
         public async Task<Order> CreateOrderAsync(OrderDto orderDto)
         {
             if (orderDto == null)
-                throw new ArgumentNullException(nameof(orderDto), "Order cannot be null");
+                throw new ArgumentNullException(nameof(orderDto), "O pedido não pode ser null.");
 
             var order = new Order
             {
@@ -27,7 +28,7 @@ namespace fiap_order_service.Services
                 CustomerDocument = orderDto.CustomerDocument,
                 CustomerName = orderDto.CustomerName,
                 CustomerEmail = orderDto.CustomerEmail,
-                Status = Order.OrderStatus.Created,
+                Status = OrderStatus.Created,
                 CreatedDate = DateTime.UtcNow,
                 UpdatedDate = DateTime.UtcNow
             };
@@ -37,7 +38,7 @@ namespace fiap_order_service.Services
                 var vehicle = await _catalogService.GetVehicleByIdAsync(item.VehicleExternalId);
 
                 if (vehicle == null)
-                    throw new KeyNotFoundException($"Vehicle with ID {item.VehicleExternalId} not found");
+                    throw new KeyNotFoundException($"Veiculo com ID {item.VehicleExternalId} não encontrado.");
 
                 order.Itens.Add(new ItemOrder
                 {
@@ -50,46 +51,62 @@ namespace fiap_order_service.Services
                 });
             }
 
+            order.TotalPrice = order.Itens.Sum(i => i.TotalPrice);
+
             var createdOrder = await _orderRepository.CreateOrderAsync(order);
 
             if (createdOrder == null)
-                throw new InvalidOperationException("Failed to create order");
+                throw new InvalidOperationException("Falha ao criar o pedido");
 
             return createdOrder;
         }
 
         public async Task<List<Order>> GetAllOrdersAsync()
         {
-            // Call the repository to get all orders
             var orders = await _orderRepository.GetAllOrdersAsync();
-            // Check if the list is null or empty
+
             if (orders == null || !orders.Any())
             {
                 throw new InvalidOperationException("No orders found");
             }
-            return orders;
+            return orders.OrderBy(x => x.TotalPrice).ToList();
         }
 
-        public async Task<Order?> GetOrderByIdAsync(int id)
+        public async Task<Order?> GetOrderByIdAsync(Guid id)
         {
-            // Validate the order ID
-            if (id <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(id), "Order ID must be greater than zero");
-            }
-            // Call the repository to get the order by ID
+            if (id == Guid.Empty)
+                throw new ArgumentNullException(nameof(id), "O ID do pedido não pode ser vazio.");
+
             var order = await _orderRepository.GetOrderByIdAsync(id);
-            // Check if the order is null
+
             if (order == null)
             {
-                throw new KeyNotFoundException($"Order with ID {id} not found");
+                throw new KeyNotFoundException($"Pedido com ID {id} não encontrado");
             }
             return order;
         }
 
-        public async Task<Order?> UpdateOrderAsync(int id, Order order)
+        public async Task<Order?> UpdateStatusOrderAsync(Guid id, Order order)
         {
-            throw new NotImplementedException();
+            if (id == Guid.Empty)
+                throw new ArgumentNullException(nameof(id), "O ID do pedido não pode ser vazio.");
+            if (order == null)
+                throw new ArgumentNullException(nameof(order), "O pedido não pode ser null.");
+
+            var existingOrder = await _orderRepository.GetOrderByIdAsync(id);
+
+            if (existingOrder == null)
+                throw new KeyNotFoundException($"Pedido com ID {id} não encontrado");
+
+            existingOrder.Status = order.Status;
+            existingOrder.UpdatedDate = DateTime.UtcNow;
+
+            var updatedOrder = await _orderRepository.UpdateStatusOrderAsync(id, existingOrder);
+
+            if (updatedOrder == null)
+                throw new InvalidOperationException("Falha ao atualizar o pedido");
+
+            return updatedOrder;
         }
     }
 }
