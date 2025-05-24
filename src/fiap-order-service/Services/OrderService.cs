@@ -52,8 +52,10 @@ namespace fiap_order_service.Services
                         UnitPrice = vehicle.Price,
                         Amount = item.Amount,
                         TotalPrice = vehicle.Price * item.Amount,
-                        CreatedDate = DateTime.UtcNow,
-                        UpdatedDate = DateTime.UtcNow
+                        Model = vehicle.Model,
+                        Brand = vehicle.Brand,
+                        Color = vehicle.Color,
+                        Year = vehicle.Year
                     });
                 }
 
