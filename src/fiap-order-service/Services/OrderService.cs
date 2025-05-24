@@ -107,19 +107,19 @@ namespace fiap_order_service.Services
             return order;
         }
 
-        public async Task<Order?> UpdateStatusOrderAsync(Guid id, Order order)
+        public async Task<Order?> UpdateStatusOrderAsync(Guid id, string status)
         {
             if (id == Guid.Empty)
                 throw new ArgumentNullException(nameof(id), "O ID do pedido não pode ser vazio.");
-            if (order == null)
-                throw new ArgumentNullException(nameof(order), "O pedido não pode ser null.");
+            if (string.IsNullOrEmpty(status))
+                throw new ArgumentNullException(nameof(status), "O pedido não pode ser null.");
 
             var existingOrder = await _orderRepository.GetOrderByIdAsync(id);
 
             if (existingOrder == null)
                 throw new KeyNotFoundException($"Pedido com ID {id} não encontrado");
 
-            existingOrder.Status = order.Status;
+            existingOrder.Status = status;
             existingOrder.UpdatedDate = DateTime.UtcNow;
 
             var updatedOrder = await _orderRepository.UpdateStatusOrderAsync(id, existingOrder);

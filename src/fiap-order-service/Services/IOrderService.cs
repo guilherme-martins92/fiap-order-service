@@ -8,6 +8,6 @@ namespace fiap_order_service.Services
         Task<List<Order>> GetAllOrdersAsync();
         Task<Order?> GetOrderByIdAsync(Guid id);
         Task<Order> CreateOrderAsync(OrderDto orderDto);
-        Task<Order?> UpdateStatusOrderAsync(Guid id, Order order);
+        Task<Order?> UpdateStatusOrderAsync(Guid id, string status);
     }
 }
