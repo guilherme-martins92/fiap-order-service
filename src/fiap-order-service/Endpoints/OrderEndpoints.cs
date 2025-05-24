@@ -1,6 +1,7 @@
 ﻿using fiap_order_service.Dtos;
 using fiap_order_service.Models;
 using fiap_order_service.Services;
+using FluentValidation;
 
 namespace fiap_order_service.Endpoints
 {
@@ -39,15 +40,23 @@ namespace fiap_order_service.Endpoints
             .WithName("GetOrderById")
             .WithOpenApi();
 
-            app.MapPost("/orders", async (OrderDto order) =>
+            app.MapPost("/orders", async (OrderDto order, IValidator<OrderDto> validator) =>
             {
                 try
                 {
                     _logger.LogInformation("Criando nova compra");
+
+                    var result = await validator.ValidateAsync(order);
+                    if (!result.IsValid)
+                    {
+                        _logger.LogWarning("Erro de validação: {@Errors}", result.Errors);
+                        return Results.ValidationProblem(result.ToDictionary());
+                    }
+
                     var createdOrder = await _orderService.CreateOrderAsync(order);
                     return Results.Created($"/orders/{createdOrder.OrderId}", createdOrder);
                 }
-                catch(KeyNotFoundException ex)
+                catch (KeyNotFoundException ex)
                 {
                     _logger.LogError(ex, "Veículo não encontrado");
                     return Results.NotFound(ex.Message);

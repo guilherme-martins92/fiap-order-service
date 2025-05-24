@@ -3,6 +3,8 @@ using fiap_order_service.Endpoints;
 using fiap_order_service.Infrastructure.HttpClients;
 using fiap_order_service.Repositories;
 using fiap_order_service.Services;
+using fiap_order_service.Validators;
+using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +16,7 @@ builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ICatalogService, CatalogService>();
 builder.Services.Configure<ApiSettings>(builder.Configuration.GetSection("ApiSettings"));
+builder.Services.AddValidatorsFromAssemblyContaining<OrderDtoValidator>();
 
 builder.Services.AddLogging(loggingBuilder =>
 {

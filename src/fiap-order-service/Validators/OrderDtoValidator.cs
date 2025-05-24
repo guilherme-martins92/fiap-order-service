@@ -1,11 +1,11 @@
-﻿using fiap_order_service.Models;
+﻿using fiap_order_service.Dtos;
 using FluentValidation;
 
 namespace fiap_order_service.Validators
 {
-    public class OrderValidator : AbstractValidator<Order>
+    public class OrderDtoValidator : AbstractValidator<OrderDto>
     {
-        public OrderValidator()
+        public OrderDtoValidator()
         {
             RuleFor(x => x.CustomerDocument)
                 .NotEmpty().WithMessage("Customer document is required.")
@@ -18,6 +18,14 @@ namespace fiap_order_service.Validators
                 .EmailAddress().WithMessage("Invalid email format.");
             RuleFor(x => x.Itens)
                 .NotEmpty().WithMessage("At least one item is required.");
+            RuleForEach(x => x.Itens).ChildRules(itens =>
+            {
+                itens.RuleFor(x => x.VehicleExternalId)
+                    .NotEmpty().WithMessage("Vehicle external ID is required.");
+                itens.RuleFor(x => x.Amount)
+                    .NotEmpty().WithMessage("Amount is required.")
+                    .GreaterThan(0).WithMessage("Amount must be greater than 0.");
+            });
         }
     }
 }

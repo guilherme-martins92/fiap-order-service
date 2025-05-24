@@ -10,55 +10,74 @@ namespace fiap_order_service.Services
     {
         private readonly IOrderRepository _orderRepository;
         private readonly ICatalogService _catalogService;
+        private readonly ILogger<OrderService> _logger;
 
-        public OrderService(IOrderRepository orderRepository, ICatalogService catalogService)
+        public OrderService(IOrderRepository orderRepository, ICatalogService catalogService, ILogger<OrderService> logger)
         {
             _orderRepository = orderRepository;
             _catalogService = catalogService;
+            _logger = logger;
         }
 
         public async Task<Order> CreateOrderAsync(OrderDto orderDto)
         {
-            if (orderDto == null)
-                throw new ArgumentNullException(nameof(orderDto), "O pedido não pode ser null.");
-
-            var order = new Order
+            try
             {
-                OrderId = Guid.NewGuid(),
-                CustomerDocument = orderDto.CustomerDocument,
-                CustomerName = orderDto.CustomerName,
-                CustomerEmail = orderDto.CustomerEmail,
-                Status = OrderStatus.Created,
-                CreatedDate = DateTime.UtcNow,
-                UpdatedDate = DateTime.UtcNow
-            };
+                _logger.LogInformation("Criando pedido com os dados: {@OrderDto}", orderDto);
 
-            foreach (var item in orderDto.Itens)
-            {
-                var vehicle = await _catalogService.GetVehicleByIdAsync(item.VehicleExternalId);
+                if (orderDto == null)
+                    throw new ArgumentNullException(nameof(orderDto), "O pedido não pode ser null.");
 
-                if (vehicle == null)
-                    throw new KeyNotFoundException($"Veiculo com ID {item.VehicleExternalId} não encontrado.");
-
-                order.Itens.Add(new ItemOrder
+                var order = new Order
                 {
-                    VehicleId = vehicle.Id,
-                    UnitPrice = vehicle.Price,
-                    Amount = item.Amount,
-                    TotalPrice = vehicle.Price * item.Amount,
+                    OrderId = Guid.NewGuid(),
+                    CustomerDocument = orderDto.CustomerDocument,
+                    CustomerName = orderDto.CustomerName,
+                    CustomerEmail = orderDto.CustomerEmail,
+                    Status = OrderStatus.Created,
                     CreatedDate = DateTime.UtcNow,
                     UpdatedDate = DateTime.UtcNow
-                });
+                };
+
+                foreach (var item in orderDto.Itens)
+                {
+                    var vehicle = await _catalogService.GetVehicleByIdAsync(item.VehicleExternalId);
+
+                    if (vehicle == null)
+                        throw new KeyNotFoundException($"Veiculo com ID {item.VehicleExternalId} não encontrado.");
+
+                    order.Itens.Add(new ItemOrder
+                    {
+                        VehicleId = vehicle.Id,
+                        UnitPrice = vehicle.Price,
+                        Amount = item.Amount,
+                        TotalPrice = vehicle.Price * item.Amount,
+                        CreatedDate = DateTime.UtcNow,
+                        UpdatedDate = DateTime.UtcNow
+                    });
+                }
+
+                order.TotalPrice = order.Itens.Sum(i => i.TotalPrice);
+
+                var createdOrder = await _orderRepository.CreateOrderAsync(order);
+
+                if (createdOrder == null)
+                    throw new InvalidOperationException("Falha ao criar o pedido");
+
+                _logger.LogInformation("Pedido criado com sucesso: {@Order}", createdOrder);
+
+                return createdOrder;
             }
-
-            order.TotalPrice = order.Itens.Sum(i => i.TotalPrice);
-
-            var createdOrder = await _orderRepository.CreateOrderAsync(order);
-
-            if (createdOrder == null)
-                throw new InvalidOperationException("Falha ao criar o pedido");
-
-            return createdOrder;
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogError(ex, "Veículo não encontrado: {Message}", ex.Message);
+                throw new KeyNotFoundException(ex.Message, ex);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogError(ex, "Erro ao criar pedido: {Message}", ex.Message);
+                throw new InvalidOperationException("Erro ao criar o pedido", ex);
+            }
         }
 
         public async Task<List<Order>> GetAllOrdersAsync()
