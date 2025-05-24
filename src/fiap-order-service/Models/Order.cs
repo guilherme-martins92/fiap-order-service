@@ -1,8 +1,11 @@
-﻿namespace fiap_order_service.Models
+﻿using Amazon.DynamoDBv2.DataModel;
+
+namespace fiap_order_service.Models
 {
+    [DynamoDBTable("Orders")]
     public class Order
     {
-        public Guid OrderId { get; set; }
+        public Guid Id { get; set; }
         public required string CustomerDocument { get; set; }
         public required string CustomerName { get; set; }
         public required string CustomerEmail { get; set; }

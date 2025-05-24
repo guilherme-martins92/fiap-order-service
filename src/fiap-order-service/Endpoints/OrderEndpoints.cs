@@ -54,7 +54,7 @@ namespace fiap_order_service.Endpoints
                     }
 
                     var createdOrder = await _orderService.CreateOrderAsync(order);
-                    return Results.Created($"/orders/{createdOrder.OrderId}", createdOrder);
+                    return Results.Created($"/orders/{createdOrder.Id}", createdOrder);
                 }
                 catch (KeyNotFoundException ex)
                 {

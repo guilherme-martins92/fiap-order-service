@@ -6,7 +6,7 @@ namespace fiap_order_service.Repositories
     {
         Task<List<Order>> GetAllOrdersAsync();
         Task<Order> GetOrderByIdAsync(Guid id);
-        Task<Order> CreateOrderAsync(Order order);
+        Task<Order?> CreateOrderAsync(Order order);
         Task<Order?> UpdateStatusOrderAsync(Guid id, Order order);
     }
 }

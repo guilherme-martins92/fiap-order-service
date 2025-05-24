@@ -30,7 +30,7 @@ namespace fiap_order_service.Services
 
                 var order = new Order
                 {
-                    OrderId = Guid.NewGuid(),
+                    Id = Guid.NewGuid(),
                     CustomerDocument = orderDto.CustomerDocument,
                     CustomerName = orderDto.CustomerName,
                     CustomerEmail = orderDto.CustomerEmail,
