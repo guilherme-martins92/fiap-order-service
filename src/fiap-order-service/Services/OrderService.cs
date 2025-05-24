@@ -42,7 +42,7 @@ namespace fiap_order_service.Services
 
                 order.Itens.Add(new ItemOrder
                 {
-                    VehicleId = vehicle.ExternalId,
+                    VehicleId = vehicle.Id,
                     UnitPrice = vehicle.Price,
                     Amount = item.Amount,
                     TotalPrice = vehicle.Price * item.Amount,

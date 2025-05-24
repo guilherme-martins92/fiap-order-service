@@ -1,3 +1,4 @@
+using fiap_order_service.Configurations;
 using fiap_order_service.Endpoints;
 using fiap_order_service.Infrastructure.HttpClients;
 using fiap_order_service.Repositories;
@@ -12,6 +13,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ICatalogService, CatalogService>();
+builder.Services.Configure<ApiSettings>(builder.Configuration.GetSection("ApiSettings"));
+
 builder.Services.AddLogging(loggingBuilder =>
 {
     loggingBuilder.AddConsole();

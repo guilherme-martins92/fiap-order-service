@@ -5,7 +5,7 @@
         /// <summary>
         /// Unique identifier for the vehicle in an external system.
         /// </summary>
-        public Guid ExternalId { get; set; }
+        public Guid Id { get; set; }
 
         /// <summary>
         /// The model of the vehicle.
