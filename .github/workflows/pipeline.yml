@@ -47,7 +47,7 @@ jobs:
         run: dotnet restore src/fiap-order-service.sln
         
       - name: Install ReportGenerator
-        run: dotnet tool install --global reportgenerator
+        run: dotnet tool install --global reportgenerator --version 5.1.20
         
       - name: Run tests with coverage
         run: |
