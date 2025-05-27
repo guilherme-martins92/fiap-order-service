@@ -53,5 +53,3 @@ using (var scope = app.Services.CreateScope())
 }
 
 await app.RunAsync();
-
-

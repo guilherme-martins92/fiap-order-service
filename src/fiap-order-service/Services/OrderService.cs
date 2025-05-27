@@ -87,9 +87,8 @@ namespace fiap_order_service.Services
             var orders = await _orderRepository.GetAllOrdersAsync();
 
             if (orders == null || !orders.Any())
-            {
-                throw new InvalidOperationException("No orders found");
-            }
+                throw new InvalidOperationException("Nenhum pedido encontrado");
+
             return orders.OrderBy(x => x.TotalPrice).ToList();
         }
 
@@ -100,10 +99,9 @@ namespace fiap_order_service.Services
 
             var order = await _orderRepository.GetOrderByIdAsync(id);
 
-            if (order == null)
-            {
+            if (order == null)        
                 throw new KeyNotFoundException($"Pedido com ID {id} não encontrado");
-            }
+       
             return order;
         }
 
