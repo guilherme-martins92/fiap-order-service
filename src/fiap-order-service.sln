@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.12.35728.132 d17.12
+VisualStudioVersion = 17.12.35728.132
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "fiap-order-service", "fiap-order-service\fiap-order-service.csproj", "{D2C163FE-6ACF-4EBE-9002-97E7AA2EEB57}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "fiap-order-service-tests", "fiap-order-service-tests\fiap-order-service-tests.csproj", "{8A561F17-B57A-4270-AC7F-6DB8BBF263CF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,8 +17,15 @@ Global
 		{D2C163FE-6ACF-4EBE-9002-97E7AA2EEB57}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D2C163FE-6ACF-4EBE-9002-97E7AA2EEB57}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D2C163FE-6ACF-4EBE-9002-97E7AA2EEB57}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A561F17-B57A-4270-AC7F-6DB8BBF263CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A561F17-B57A-4270-AC7F-6DB8BBF263CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A561F17-B57A-4270-AC7F-6DB8BBF263CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A561F17-B57A-4270-AC7F-6DB8BBF263CF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A1F8241E-9E25-4548-92E3-3003EEAFB39D}
 	EndGlobalSection
 EndGlobal
