@@ -44,7 +44,7 @@ jobs:
           dotnet tool update dotnet-sonarscanner --tool-path .\.sonar\scanner
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore src/fiap-order-service.sln
 
       - name: Run tests with coverage
         run: |
