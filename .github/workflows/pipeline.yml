@@ -48,7 +48,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          dotnet test --collect:"XPlat Code Coverage"
+          dotnet test src/fiap-order-service-tests/fiap-order-service-tests.csproj --collect:"XPlat Code Coverage"
           reportgenerator -reports:src/fiap-order-service-tests/TestResults/**/*.xml -targetdir:coverage-report
 
       - name: Build and analyze
