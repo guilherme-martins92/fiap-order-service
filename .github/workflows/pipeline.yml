@@ -1,36 +1,53 @@
-name: Build
+name: Validate code
+
 on:
   push:
-    branches:
-      - main
+    branches: ["**"]
   pull_request:
-    types: [opened, synchronize, reopened]
+    branches: [develop]
 
 jobs:
   build:
-    name: Build
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
+
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v3
-      
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v3
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: '7.0.x'
+          dotnet-version: 8.0.x
 
-      - name: Set up JDK
-        uses: actions/setup-java@v3
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          path: $HOME/sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
 
-      - name: Install dotnet-coverage tool
-        run: dotnet tool install --global dotnet-coverage
+      - name: Cache SonarCloud scanner
+        id: cache-sonar-scanner
+        uses: actions/cache@v4
+        with:
+          path: ./.sonar/scanner
+          key: ${{ runner.os }}-sonar-scanner
+          restore-keys: ${{ runner.os }}-sonar-scanner
 
-      - name: Run SonarCloud Analysis
+      - name: Install SonarCloud scanner
+        if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
+        run: dotnet tool update dotnet-sonarscanner --tool-path ./.sonar/scanner
+
+      - name: Install project dependencies
+        run: dotnet restore src/fiap-order-service.sln
+
+      - name: Test and analyze
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          .\.sonar\scanner\dotnet-sonarscanner begin /k:"guilherme-martins92_fiap-order-service" /o:"guilherme-martins92" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.vscoveragexml.reportsPaths=coverage.xml
-          dotnet build --configuration Release
-          dotnet-coverage collect 'dotnet test' -f xml -o 'coverage.xml'
-          .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+          ./.sonar/scanner/dotnet-sonarscanner begin /k:"guilherme-martins92_fiap-order-service" /o:"guilherme-martins92" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.coverageReportPaths="coverage.xml"
+          dotnet test src/fiap-order-service.sln /p:CollectCoverage=true /p:CoverletOutputFormat=opencover -l trx
+          ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+
+      - name: Build
+        run: dotnet build src/fiap-order-service.sln --configuration Release --no-restore
