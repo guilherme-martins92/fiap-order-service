@@ -1,8 +1,11 @@
 ﻿using Amazon.DynamoDBv2.DataModel;
 using fiap_order_service.Models;
+using System.Diagnostics.CodeAnalysis;
+
 
 namespace fiap_order_service.Repositories
 {
+    [ExcludeFromCodeCoverage]
     public class OrderRepository : IOrderRepository
     {
         private readonly IDynamoDBContext _context;

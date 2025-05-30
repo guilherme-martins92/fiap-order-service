@@ -1,9 +1,11 @@
 ﻿using fiap_order_service.Dtos;
 using fiap_order_service.Services;
 using FluentValidation;
+using System.Diagnostics.CodeAnalysis;
 
 namespace fiap_order_service.Endpoints
 {
+    [ExcludeFromCodeCoverage]
     public class OrderEndpoints
     {
         private readonly ILogger<OrderEndpoints> _logger;

@@ -1,8 +1,10 @@
 ﻿using fiap_order_service.Dtos;
 using FluentValidation;
+using System.Diagnostics.CodeAnalysis;
 
 namespace fiap_order_service.Validators
 {
+    [ExcludeFromCodeCoverage]
     public class OrderDtoValidator : AbstractValidator<OrderDto>
     {
         public OrderDtoValidator()
