@@ -10,7 +10,7 @@ using System.Text.Json;
 namespace fiap_payment_processor;
 public class Function
 {
-    private static readonly HttpClient _httpClient = new HttpClient();
+    private static HttpClient _httpClient = new HttpClient();
 
     public async Task FunctionHandler(SQSEvent sqsEvent, ILambdaContext context)
     {
