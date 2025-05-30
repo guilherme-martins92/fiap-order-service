@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "fiap-order-service", "fiap-
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "fiap-order-service-tests", "fiap-order-service-tests\fiap-order-service-tests.csproj", "{8A561F17-B57A-4270-AC7F-6DB8BBF263CF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "fiap-payment-processor", "fiap-payment-processor\fiap-payment-processor.csproj", "{B7670DB6-BFBF-5F13-CFC7-6052293C505A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{8A561F17-B57A-4270-AC7F-6DB8BBF263CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8A561F17-B57A-4270-AC7F-6DB8BBF263CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8A561F17-B57A-4270-AC7F-6DB8BBF263CF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B7670DB6-BFBF-5F13-CFC7-6052293C505A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7670DB6-BFBF-5F13-CFC7-6052293C505A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B7670DB6-BFBF-5F13-CFC7-6052293C505A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7670DB6-BFBF-5F13-CFC7-6052293C505A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
