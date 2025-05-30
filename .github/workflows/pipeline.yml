@@ -1,4 +1,4 @@
-name: Validate code
+name: .NET CI/CD Pipeline
 
 on:
   push:
@@ -9,9 +9,44 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  build:
+  Build:
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v3
 
+      - name: Configurar .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restaurar dependências
+        run: dotnet restore src/fiap-order-service.sln
+
+      - name: Build da aplicação
+        run: dotnet build src/fiap-order-service.sln --configuration Release
+        
+  Tests:
+    runs-on: ubuntu-latest
+    needs: Build
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v3
+
+      - name: Configurar .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restaurar dependências
+        run: dotnet restore src/fiap-order-service-tests/fiap-order-service-tests.csproj
+
+      - name: Executar testes com cobertura
+        run: dotnet test src/fiap-order-service-tests/fiap-order-service-tests.csproj --configuration Release --no-restore
+        
+  SonarCloud:
+    runs-on: ubuntu-latest
+    needs: Tests
     steps:
       - uses: actions/checkout@v4
 
