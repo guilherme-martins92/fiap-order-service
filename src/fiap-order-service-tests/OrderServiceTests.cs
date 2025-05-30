@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using fiap_order_service.Constants;
 using fiap_order_service.Dtos;
 using fiap_order_service.Infrastructure.HttpClients;
+using fiap_order_service.Messaging;
 using fiap_order_service.Models;
 using fiap_order_service.Repositories;
 using fiap_order_service.Services;
@@ -19,6 +20,7 @@ namespace fiap_order_service_tests.Services
         private readonly Mock<IOrderRepository> _orderRepositoryMock;
         private readonly Mock<ICatalogService> _catalogServiceMock;
         private readonly Mock<ILogger<OrderService>> _loggerMock;
+        private readonly Mock<ISqsClientService> _sqsClientServiceMock;
         private readonly OrderService _orderService;
 
         public OrderServiceTests()
@@ -26,7 +28,8 @@ namespace fiap_order_service_tests.Services
             _orderRepositoryMock = new Mock<IOrderRepository>();
             _catalogServiceMock = new Mock<ICatalogService>();
             _loggerMock = new Mock<ILogger<OrderService>>();
-            _orderService = new OrderService(_orderRepositoryMock.Object, _catalogServiceMock.Object, _loggerMock.Object);
+            _sqsClientServiceMock = new Mock<ISqsClientService>();
+            _orderService = new OrderService(_orderRepositoryMock.Object, _catalogServiceMock.Object, _loggerMock.Object, _sqsClientServiceMock.Object);
         }
 
         [Fact]
@@ -279,6 +282,97 @@ namespace fiap_order_service_tests.Services
 
             // Act & Assert
             await Assert.ThrowsAsync<InvalidOperationException>(() => _orderService.UpdateStatusOrderAsync(orderId, "Completed"));
+        }
+
+        [Fact]
+        public async Task SendOrderToPaymentQueue_ShouldUpdateStatusAndSendMessage()
+        {
+            // Arrange
+            var order = new Order
+            {
+                Id = Guid.NewGuid(),
+                CustomerDocument = "12345678900",
+                CustomerName = "Test User",
+                CustomerEmail = "test@example.com",
+                Status = OrderStatus.Created,
+                TotalPrice = 1000,
+                Itens = new List<ItemOrder>(),
+                CreatedDate = DateTime.UtcNow,
+                UpdatedDate = DateTime.UtcNow
+            };
+
+            var orderRepositoryMock = new Mock<IOrderRepository>();
+            var catalogServiceMock = new Mock<ICatalogService>();
+            var loggerMock = new Mock<ILogger<OrderService>>();
+            var sqsClientServiceMock = new Mock<ISqsClientService>();
+
+            orderRepositoryMock
+                .Setup(r => r.UpdateStatusOrderAsync(order.Id, It.Is<Order>(o => o.Status == OrderStatus.PendingPayment)))
+                .ReturnsAsync(order);
+
+            sqsClientServiceMock
+                .Setup(s => s.SendMessageAsync(It.IsAny<string>()))
+                .Returns(Task.CompletedTask);
+
+            var service = new OrderService(
+                orderRepositoryMock.Object,
+                catalogServiceMock.Object,
+                loggerMock.Object,
+                sqsClientServiceMock.Object
+            );
+
+            // Act
+            await service.SendOrderToPaymentQueue(order);
+
+            // Assert
+            orderRepositoryMock.Verify(r => r.UpdateStatusOrderAsync(order.Id, It.Is<Order>(o => o.Status == OrderStatus.PendingPayment)), Times.Once);
+            sqsClientServiceMock.Verify(s => s.SendMessageAsync(It.IsAny<string>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task SendOrderToPaymentQueue_ShouldLogAndThrow_WhenRepositoryFails()
+        {
+            // Arrange
+            var order = new Order
+            {
+                Id = Guid.NewGuid(),
+                CustomerDocument = "12345678900",
+                CustomerName = "Test User",
+                CustomerEmail = "test@example.com",
+                Status = OrderStatus.Created,
+                TotalPrice = 1000,
+                Itens = new List<ItemOrder>(),
+                CreatedDate = DateTime.UtcNow,
+                UpdatedDate = DateTime.UtcNow
+            };
+
+            var orderRepositoryMock = new Mock<IOrderRepository>();
+            var catalogServiceMock = new Mock<ICatalogService>();
+            var loggerMock = new Mock<ILogger<OrderService>>();
+            var sqsClientServiceMock = new Mock<ISqsClientService>();
+
+            orderRepositoryMock
+                .Setup(r => r.UpdateStatusOrderAsync(order.Id, It.IsAny<Order>()))
+                .ThrowsAsync(new Exception("Repository error"));
+
+            var service = new OrderService(
+                orderRepositoryMock.Object,
+                catalogServiceMock.Object,
+                loggerMock.Object,
+                sqsClientServiceMock.Object
+            );
+
+            // Act & Assert
+            await Assert.ThrowsAsync<InvalidOperationException>(() => service.SendOrderToPaymentQueue(order));
+            orderRepositoryMock.Verify(r => r.UpdateStatusOrderAsync(order.Id, It.IsAny<Order>()), Times.Once);
+            loggerMock.Verify(
+                l => l.Log(
+                    LogLevel.Error,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Erro ao enviar pedido para a fila de pagamento")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
     }
 }
