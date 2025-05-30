@@ -3,8 +3,8 @@
     public static class OrderStatus
     {
         public const string Created = "CRIADO";
-        public const string Processing = "PROCESSANDO";
+        public const string PendingPayment = "PENDENTE DE PAGAMENTO";
         public const string Completed = "PAGO";
-        public const string Canceled = "CANCELADO";
+        public const string Canceled = "CANCELADO";        
     }
 }

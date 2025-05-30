@@ -1,6 +1,7 @@
 ﻿using fiap_order_service.Constants;
 using fiap_order_service.Dtos;
 using fiap_order_service.Infrastructure.HttpClients;
+using fiap_order_service.Messaging;
 using fiap_order_service.Models;
 using fiap_order_service.Repositories;
 
@@ -11,12 +12,14 @@ namespace fiap_order_service.Services
         private readonly IOrderRepository _orderRepository;
         private readonly ICatalogService _catalogService;
         private readonly ILogger<OrderService> _logger;
+        private readonly ISqsClientService _sqsClientService;
 
-        public OrderService(IOrderRepository orderRepository, ICatalogService catalogService, ILogger<OrderService> logger)
+        public OrderService(IOrderRepository orderRepository, ICatalogService catalogService, ILogger<OrderService> logger, ISqsClientService sqsClientService)
         {
             _orderRepository = orderRepository;
             _catalogService = catalogService;
             _logger = logger;
+            _sqsClientService = sqsClientService;
         }
 
         public async Task<Order> CreateOrderAsync(OrderDto orderDto)
@@ -99,9 +102,9 @@ namespace fiap_order_service.Services
 
             var order = await _orderRepository.GetOrderByIdAsync(id);
 
-            if (order == null)        
+            if (order == null)
                 throw new KeyNotFoundException($"Pedido com ID {id} não encontrado");
-       
+
             return order;
         }
 
@@ -126,6 +129,24 @@ namespace fiap_order_service.Services
                 throw new InvalidOperationException("Falha ao atualizar o pedido");
 
             return updatedOrder;
+        }
+
+        public async Task SendOrderToPaymentQueue(Order order)
+        {
+            try
+            {
+                _logger.LogInformation("Enviando pedido para a fila de pagamento: {@Order}", order);
+
+                order.Status = OrderStatus.PendingPayment;
+                await _orderRepository.UpdateStatusOrderAsync(order.Id, order);
+
+                await _sqsClientService.SendMessageAsync("Pedido de testes");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao enviar pedido para a fila de pagamento: {Message}", ex.Message);
+                throw new InvalidOperationException("Erro ao enviar o pedido para a fila de pagamento", ex);
+            }
         }
     }
 }
