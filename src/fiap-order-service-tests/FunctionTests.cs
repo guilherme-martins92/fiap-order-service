@@ -55,6 +55,17 @@ public class FunctionTests
         return new HttpClient(handlerMock.Object);
     }
 
+    // Helper class to inject HttpClient
+    private class FunctionTestable : Function
+    {
+        public FunctionTestable(HttpClient httpClient)
+        {
+            typeof(Function)
+                .GetField("_httpClient", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!
+                .SetValue(null, httpClient);
+        }
+    }
+
     [Fact]
     public async Task ProcessPaymentAsync_SuccessfulPayment_ReturnsSuccessMessage()
     {
@@ -102,14 +113,89 @@ public class FunctionTests
         Assert.StartsWith("Failed to update payment status:", result);
     }
 
-    // Helper class to inject HttpClient
-    private class FunctionTestable : Function
+    [Fact]
+    public async Task FunctionHandler_ValidPaymentRequest_ProcessesPayment()
     {
-        public FunctionTestable(HttpClient httpClient)
+        // Arrange
+        var paymentRequest = GetSamplePaymentRequest();
+        var sqsEvent = new Amazon.Lambda.SQSEvents.SQSEvent
         {
-            typeof(Function)
-                .GetField("_httpClient", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!
-                .SetValue(null, httpClient);
-        }
+            Records = new List<Amazon.Lambda.SQSEvents.SQSEvent.SQSMessage>
+            {
+                new Amazon.Lambda.SQSEvents.SQSEvent.SQSMessage
+                {
+                    Body = System.Text.Json.JsonSerializer.Serialize(paymentRequest)
+                }
+            }
+        };
+        var httpClient = GetMockHttpClient(HttpStatusCode.OK, HttpStatusCode.OK);
+        var function = new FunctionTestable(httpClient);
+
+        var loggerMock = new Mock<Amazon.Lambda.Core.ILambdaLogger>();
+        var contextMock = new Mock<Amazon.Lambda.Core.ILambdaContext>();
+        contextMock.SetupGet(c => c.Logger).Returns(loggerMock.Object);
+
+        // Act
+        await function.FunctionHandler(sqsEvent, contextMock.Object);
+
+        // Assert
+        loggerMock.Verify(l => l.LogInformation(It.Is<string>(s => s.Contains("Payment processed: Payment processed successfully."))), Times.Once);
+    }
+
+    [Fact]
+    public async Task FunctionHandler_InvalidPaymentRequest_LogsInvalidRequest()
+    {
+        // Arrange
+        var sqsEvent = new Amazon.Lambda.SQSEvents.SQSEvent
+        {
+            Records = new List<Amazon.Lambda.SQSEvents.SQSEvent.SQSMessage>
+            {
+                new Amazon.Lambda.SQSEvents.SQSEvent.SQSMessage
+                {
+                    Body = "not a valid json"
+                }
+            }
+        };
+        var httpClient = GetMockHttpClient(HttpStatusCode.OK, HttpStatusCode.OK);
+        var function = new FunctionTestable(httpClient);
+
+        var loggerMock = new Mock<Amazon.Lambda.Core.ILambdaLogger>();
+        var contextMock = new Mock<Amazon.Lambda.Core.ILambdaContext>();
+        contextMock.SetupGet(c => c.Logger).Returns(loggerMock.Object);
+
+        // Act
+        await function.FunctionHandler(sqsEvent, contextMock.Object);
+
+        // Assert
+        loggerMock.Verify(l => l.LogError(It.Is<string>(s => s.StartsWith("Error processing record:"))), Times.Once);
+    }
+
+    [Fact]
+    public async Task FunctionHandler_PaymentProcessingFails_LogsFailure()
+    {
+        // Arrange
+        var paymentRequest = GetSamplePaymentRequest();
+        var sqsEvent = new Amazon.Lambda.SQSEvents.SQSEvent
+        {
+            Records = new List<Amazon.Lambda.SQSEvents.SQSEvent.SQSMessage>
+            {
+                new Amazon.Lambda.SQSEvents.SQSEvent.SQSMessage
+                {
+                    Body = System.Text.Json.JsonSerializer.Serialize(paymentRequest)
+                }
+            }
+        };
+        var httpClient = GetMockHttpClient(HttpStatusCode.BadRequest, HttpStatusCode.OK);
+        var function = new FunctionTestable(httpClient);
+
+        var loggerMock = new Mock<Amazon.Lambda.Core.ILambdaLogger>();
+        var contextMock = new Mock<Amazon.Lambda.Core.ILambdaContext>();
+        contextMock.SetupGet(c => c.Logger).Returns(loggerMock.Object);
+
+        // Act
+        await function.FunctionHandler(sqsEvent, contextMock.Object);
+
+        // Assert
+        loggerMock.Verify(l => l.LogInformation(It.Is<string>(s => s.Contains("Failed to process payment:"))), Times.Once);
     }
 }
