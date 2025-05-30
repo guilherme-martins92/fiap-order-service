@@ -27,9 +27,9 @@ namespace fiap_order_service.Repositories
             return orders;
         }
 
-        public async Task<Order> GetOrderByIdAsync(Guid id)
+        public async Task<Order?> GetOrderByIdAsync(Guid id)
         {
-            var order = await _context.LoadAsync<Order>(id);
+            var order = await _context.LoadAsync<Order?>(id);
             return order;
         }
 
