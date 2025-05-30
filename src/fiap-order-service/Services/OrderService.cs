@@ -69,6 +69,8 @@ namespace fiap_order_service.Services
                 if (createdOrder == null)
                     throw new InvalidOperationException("Falha ao criar o pedido");
 
+                await SendOrderToPaymentQueue(createdOrder);
+
                 _logger.LogInformation("Pedido criado com sucesso: {@Order}", createdOrder);
 
                 return createdOrder;
@@ -140,7 +142,16 @@ namespace fiap_order_service.Services
                 order.Status = OrderStatus.PendingPayment;
                 await _orderRepository.UpdateStatusOrderAsync(order.Id, order);
 
-                await _sqsClientService.SendMessageAsync("Pedido de testes");
+                var paymentPayLoad = new PaymentPayLoad
+                {
+                    OrderId = order.Id,
+                    PaymentMethod = PaymentMethod.CreditCard,
+                    CustomerEmail = order.CustomerEmail,
+                    Amount = order.TotalPrice,
+                    Description = $"Pedido {order.Id} - {order.CustomerName} - {order.TotalPrice:C}"
+                };
+
+                await _sqsClientService.SendMessageAsync(paymentPayLoad);
             }
             catch (Exception ex)
             {
