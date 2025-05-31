@@ -402,3 +402,6 @@ FodyWeavers.xsd
 
 # Arquivos SonarQube
 src/.sonarqube
+
+# AWS SAM Template
+.aws-sam
