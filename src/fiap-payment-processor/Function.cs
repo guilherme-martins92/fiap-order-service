@@ -1,6 +1,7 @@
 using Amazon.Lambda.Core;
 using Amazon.Lambda.SQSEvents;
 using fiap_payment_processor.Models;
+using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;
 
@@ -27,7 +28,7 @@ public class Function
 
                 var response = await ProcessPaymentAsync(paymentRequest);
 
-                context.Logger.LogInformation($"Payment processed: {response}");
+                context.Logger.LogInformation($"Pagamento processado: {response}");
             }
             catch (Exception ex)
             {
@@ -38,33 +39,21 @@ public class Function
 
     public async Task<string> ProcessPaymentAsync(PaymentRequest paymentRequest)
     {
-        var jsonContent = JsonSerializer.Serialize(paymentRequest);
-        var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-
-        var response = await _httpClient.PostAsync("https://api.example.com/process-payment", content);
-
-        if (response.IsSuccessStatusCode)
-        {
-            await UpdatePaymentStatusAsync(paymentRequest.OrderId, "PAGO");
-            return "Payment processed successfully.";
-        }
-        else
-        {
-            return $"Failed to process payment: {response.ReasonPhrase}";
-        }
+        await UpdatePaymentStatusAsync(paymentRequest.OrderId, "PAGO");
+        return "Pagamento processado com sucesso!";
     }
 
     public async Task<string> UpdatePaymentStatusAsync(string orderId, string status)
     {
         var updateContent = new StringContent(JsonSerializer.Serialize(new { OrderId = orderId, Status = status }), Encoding.UTF8, "application/json");
-        var response = await _httpClient.PutAsync($"https://api.example.com/orders/{orderId}/status", updateContent);
+        var response = await _httpClient.PutAsync($"https://3usbkhj94a.execute-api.us-east-1.amazonaws.com/orders/{orderId}/status", updateContent);
         if (response.IsSuccessStatusCode)
         {
-            return "Payment status updated successfully.";
+            return "Status de pagamento atualizado com sucesso.";
         }
         else
         {
-            return $"Failed to update payment status: {response.ReasonPhrase}";
+            return $"Falha ao tentar atualizar o status de pagamento: {response.ReasonPhrase}";
         }
     }
 }
