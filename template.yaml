@@ -23,9 +23,8 @@ Resources:
       MemorySize: 1024
       Environment:
         Variables:
-          VEHICLES_TABLE: !Ref OrdersTable
+          ORDERS_TABLE: !Ref OrdersTable
       Policies:
-        # Give Create/Read/Update/Delete Permissions to the VehiclesTable
         - DynamoDBCrudPolicy:
             TableName: !Ref OrdersTable
         - Statement:
@@ -47,7 +46,7 @@ Resources:
             Path: /
             Method: ANY
 
-  FiapPaymentProcessingLambda:
+  FiapPaymentProcessing:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./src/fiap-payment-processor/
@@ -83,7 +82,7 @@ Resources:
     Description: Fila SQS para processamento de pagamentos.
     Properties:
       QueueName: PaymentProcessingQueue
-      VisibilityTimeout: 30
+      VisibilityTimeout: 100
       MessageRetentionPeriod: 86400
       ReceiveMessageWaitTimeSeconds: 10
 
