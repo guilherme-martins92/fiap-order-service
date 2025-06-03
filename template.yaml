@@ -1,0 +1,106 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Sample SAM Template for fiap-order-service
+
+Globals:
+  Function:
+    Timeout: 100
+
+    Tracing: Active
+    LoggingConfig:
+      LogFormat: JSON
+  Api:
+    TracingEnabled: true
+Resources:
+  FiapOrderServiceApi:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Lambda function em .NET 8 para gerenciamento de pedidos, integrando uma API Web com DynamoDB e enviando mensagens para a fila PaymentProcessingQueue.
+      CodeUri: ./src/fiap-order-service/
+      Handler: fiap-order-service
+      Runtime: dotnet8
+      MemorySize: 1024
+      Environment:
+        Variables:
+          VEHICLES_TABLE: !Ref OrdersTable
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the VehiclesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrdersTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - sqs:SendMessage
+              Resource: !GetAtt PaymentProcessingQueue.Arn
+      Events:
+        ProxyResource:
+          Type: HttpApi
+          Properties:
+            PayloadFormatVersion: "2.0"
+            Path: /{proxy+}
+            Method: ANY
+        RootResource:
+          PayloadFormatVersion: "2.0"
+          Type: HttpApi
+          Properties:
+            Path: /
+            Method: ANY
+
+  FiapPaymentProcessingLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src/fiap-payment-processor/
+      Handler: FunctionHandler
+      Runtime: dotnet8
+      Description: Lambda function em .NET 8 para processamento assincrono de mensagens da fila PaymentProcessingQueue.
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - SQSPollerPolicy:
+            QueueName: !Ref PaymentProcessingQueue
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt PaymentProcessingQueue.Arn
+            BatchSize: 5
+
+  # DynamoDB table to store item: {id: &lt;ID&gt;, name: &lt;NAME&gt;}
+  OrdersTable:
+    Type: AWS::Serverless::SimpleTable
+    Description: Tabela DynamoDB para armazenamento de pedidos.
+    Properties:
+      TableName: Orders
+      PrimaryKey:
+        Name: Id
+        Type: String
+      ProvisionedThroughput:
+        ReadCapacityUnits: 2
+        WriteCapacityUnits: 2
+
+  PaymentProcessingQueue:
+    Type: AWS::SQS::Queue
+    Description: Fila SQS para processamento de pagamentos.
+    Properties:
+      QueueName: PaymentProcessingQueue
+      VisibilityTimeout: 30
+      MessageRetentionPeriod: 86400
+      ReceiveMessageWaitTimeSeconds: 10
+
+  ApplicationResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name:
+        Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
+      ResourceQuery:
+        Type: CLOUDFORMATION_STACK_1_0
+  ApplicationInsightsMonitoring:
+    Type: AWS::ApplicationInsights::Application
+    Properties:
+      ResourceGroupName:
+        Ref: ApplicationResourceGroup
+      AutoConfigurationEnabled: "true"
+Outputs:
+  WebEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
