@@ -88,3 +88,27 @@ jobs:
 
       - name: Build
         run: dotnet build src/fiap-order-service.sln --configuration Release --no-restore
+
+  Deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: SonarCloud
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v3
+
+      - name: Instalar AWS SAM CLI
+        run: pip install aws-sam-cli
+
+      - name: Configurar credenciais AWS
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Build SAM Application
+        run: sam build
+
+      - name: Deploy para AWS
+        run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset --stack-name fiap-order-service
