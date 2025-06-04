@@ -40,7 +40,7 @@ public class Function
     public async Task<string> ProcessPaymentAsync(PaymentRequest paymentRequest)
     {
         await UpdatePaymentStatusAsync(paymentRequest.OrderId, "PAGO");
-        return "Pagamento processado com sucesso!";
+        return "Pagamento processado com sucesso.";
     }
 
     public async Task<string> UpdatePaymentStatusAsync(string orderId, string status)

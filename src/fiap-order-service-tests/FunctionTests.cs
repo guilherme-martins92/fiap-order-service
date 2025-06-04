@@ -78,7 +78,7 @@ public class FunctionTests
         var result = await function.ProcessPaymentAsync(paymentRequest);
 
         // Assert
-        Assert.Equal("Pagamento processado com sucesso!", result);
+        Assert.Equal("Pagamento processado com sucesso.", result);
     }
 
     [Fact]
@@ -139,7 +139,7 @@ public class FunctionTests
         await function.FunctionHandler(sqsEvent, contextMock.Object);
 
         // Assert
-        loggerMock.Verify(l => l.LogInformation(It.Is<string>(s => s.Contains("Pagamento processado: Pagamento processado com sucesso!"))), Times.Once);
+        loggerMock.Verify(l => l.LogInformation(It.Is<string>(s => s.Contains("Pagamento processado: Pagamento processado com sucesso."))), Times.Once);
     }
 
     [Fact]
