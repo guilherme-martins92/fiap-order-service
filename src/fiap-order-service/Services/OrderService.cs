@@ -28,9 +28,6 @@ namespace fiap_order_service.Services
             {
                 _logger.LogInformation("Criando pedido com os dados: {@OrderDto}", orderDto);
 
-                if (orderDto == null)
-                    throw new ArgumentNullException(nameof(orderDto), "O pedido não pode ser null.");
-
                 var order = new Order
                 {
                     Id = Guid.NewGuid(),
@@ -47,7 +44,10 @@ namespace fiap_order_service.Services
                     var vehicle = await _catalogService.GetVehicleByIdAsync(item.VehicleExternalId);
 
                     if (vehicle == null)
-                        throw new KeyNotFoundException($"Veiculo com ID {item.VehicleExternalId} não encontrado.");
+                    {
+                        _logger.LogInformation("Veículo com ID {VehicleId} não encontrado.", item.VehicleExternalId);
+                        throw new KeyNotFoundException();
+                    }
 
                     order.Itens.Add(new ItemOrder
                     {
@@ -80,10 +80,10 @@ namespace fiap_order_service.Services
                 _logger.LogError(ex, "Veículo não encontrado: {Message}", ex.Message);
                 throw new KeyNotFoundException(ex.Message, ex);
             }
-            catch (InvalidOperationException ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Erro ao criar pedido: {Message}", ex.Message);
-                throw new InvalidOperationException("Erro ao criar o pedido", ex);
+                throw new InvalidOperationException();
             }
         }
 

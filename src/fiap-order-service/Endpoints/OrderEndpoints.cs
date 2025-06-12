@@ -39,7 +39,7 @@ namespace fiap_order_service.Endpoints
 
                 if (order == null)
                     return Results.NotFound("Pedido não encontrado.");
-              
+
                 return Results.Ok(order);
             })
             .WithName("GetOrderById")
@@ -49,8 +49,6 @@ namespace fiap_order_service.Endpoints
             {
                 try
                 {
-                    _logger.LogInformation("Criando nova compra");
-
                     var result = await validator.ValidateAsync(order);
                     if (!result.IsValid)
                     {
@@ -61,20 +59,13 @@ namespace fiap_order_service.Endpoints
                     var createdOrder = await _orderService.CreateOrderAsync(order);
                     return Results.Created($"/orders/{createdOrder.Id}", createdOrder);
                 }
-                catch (KeyNotFoundException ex)
+                catch (KeyNotFoundException)
                 {
-                    _logger.LogError(ex, "Veículo não encontrado");
-                    return Results.NotFound(ex.Message);
+                    return Results.NotFound("Veículo não encontrado.");
                 }
-                catch (InvalidOperationException ex)
+                catch (Exception)
                 {
-                    _logger.LogError(ex, "Erro ao criar compra");
-                    return Results.Problem(title: "Erro ao criar compra", detail: ex.Message);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Erro ao buscar veículos");
-                    return Results.Problem(title: "Erro interno");
+                    return Results.Problem(title: "Ocorreu um erro interno.");
                 }
             })
             .WithName("CreateOrder")
