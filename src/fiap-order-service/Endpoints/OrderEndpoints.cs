@@ -25,7 +25,7 @@ namespace fiap_order_service.Endpoints
 
                 if (orders == null || !orders.Any())
                 {
-                    return Results.NotFound("Nenhuma compra encontrada");
+                    return Results.NotFound("Nenhum pedido encontrado.");
                 }
 
                 return Results.Ok(orders);
@@ -35,12 +35,11 @@ namespace fiap_order_service.Endpoints
 
             app.MapGet("/orders/{id}", async (Guid id) =>
             {
-                _logger.LogInformation("Buscando compra com ID: {Id}", id);
                 var order = await _orderService.GetOrderByIdAsync(id);
 
                 if (order == null)
-                    return Results.NotFound();
-
+                    return Results.NotFound("Pedido não encontrado.");
+              
                 return Results.Ok(order);
             })
             .WithName("GetOrderById")
