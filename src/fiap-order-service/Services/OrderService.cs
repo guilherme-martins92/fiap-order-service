@@ -100,13 +100,13 @@ namespace fiap_order_service.Services
 
         public async Task<Order?> GetOrderByIdAsync(Guid id)
         {
-            if (id == Guid.Empty)
-                throw new ArgumentNullException(nameof(id), "O ID do pedido não pode ser vazio.");
-
             var order = await _orderRepository.GetOrderByIdAsync(id);
 
             if (order == null)
-                throw new KeyNotFoundException($"Pedido com ID {id} não encontrado");
+            {
+                _logger.LogInformation("Pedido com ID {Id} não encontrado.", id);
+                return null;
+            }
 
             return order;
         }
