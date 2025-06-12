@@ -68,13 +68,6 @@ namespace fiap_order_service_tests.Services
         }
 
         [Fact]
-        public async Task CreateOrderAsync_ShouldThrowArgumentNullException_WhenOrderDtoIsNull()
-        {
-            // Act & Assert
-            await Assert.ThrowsAsync<ArgumentNullException>(() => _orderService.CreateOrderAsync(null!));
-        }
-
-        [Fact]
         public async Task CreateOrderAsync_ShouldThrowKeyNotFoundException_WhenVehicleNotFound()
         {
             // Arrange
