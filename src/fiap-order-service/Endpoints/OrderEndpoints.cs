@@ -39,7 +39,7 @@ namespace fiap_order_service.Endpoints
 
                 if (order == null)
                     return Results.NotFound("Pedido não encontrado.");
-
+              
                 return Results.Ok(order);
             })
             .WithName("GetOrderById")
