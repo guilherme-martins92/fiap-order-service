@@ -90,10 +90,11 @@ namespace fiap_order_service.Services
         public async Task<List<Order>> GetAllOrdersAsync()
         {
             var orders = await _orderRepository.GetAllOrdersAsync();
-
             if (orders == null || !orders.Any())
-                throw new InvalidOperationException("Nenhum pedido encontrado");
-
+            {
+                _logger.LogInformation("Nenhum pedido encontrado.");
+                return new List<Order>();
+            }
             return orders.OrderBy(x => x.TotalPrice).ToList();
         }
 
