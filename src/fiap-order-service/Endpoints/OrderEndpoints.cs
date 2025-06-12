@@ -21,8 +21,13 @@ namespace fiap_order_service.Endpoints
         {
             app.MapGet("/orders", async () =>
             {
-                _logger.LogInformation("Buscando todas as compras");
                 var orders = await _orderService.GetAllOrdersAsync();
+
+                if (orders == null || !orders.Any())
+                {
+                    return Results.NotFound("Nenhuma compra encontrada");
+                }
+
                 return Results.Ok(orders);
             })
             .WithName("GetAllOrders")
@@ -33,9 +38,9 @@ namespace fiap_order_service.Endpoints
                 _logger.LogInformation("Buscando compra com ID: {Id}", id);
                 var order = await _orderService.GetOrderByIdAsync(id);
 
-                if (order == null)            
+                if (order == null)
                     return Results.NotFound();
-               
+
                 return Results.Ok(order);
             })
             .WithName("GetOrderById")
@@ -81,9 +86,9 @@ namespace fiap_order_service.Endpoints
                 _logger.LogInformation("Atualizando compra com ID: {Id}", id);
                 var updatedOrder = await _orderService.UpdateStatusOrderAsync(id, status);
 
-                if (updatedOrder == null)                
+                if (updatedOrder == null)
                     return Results.NotFound();
-                
+
                 return Results.Ok(updatedOrder);
             })
             .WithName("UpdateOrder")

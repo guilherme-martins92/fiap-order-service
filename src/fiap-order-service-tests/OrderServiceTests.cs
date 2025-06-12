@@ -150,13 +150,17 @@ namespace fiap_order_service_tests.Services
         }
 
         [Fact]
-        public async Task GetAllOrdersAsync_ShouldThrowInvalidOperationException_WhenNoOrdersExist()
+        public async Task GetAllOrdersAsync_ShouldReturnEmptyList_WhenNoOrdersExist()
         {
             // Arrange
             _orderRepositoryMock.Setup(x => x.GetAllOrdersAsync()).ReturnsAsync(new List<Order>());
 
-            // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() => _orderService.GetAllOrdersAsync());
+            // Act
+            var result = await _orderService.GetAllOrdersAsync();
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Empty(result);
         }
 
         [Fact]
