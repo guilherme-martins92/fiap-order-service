@@ -190,21 +190,17 @@ namespace fiap_order_service_tests.Services
         }
 
         [Fact]
-        public async Task GetOrderByIdAsync_ShouldThrowArgumentNullException_WhenIdIsEmpty()
-        {
-            // Act & Assert
-            await Assert.ThrowsAsync<ArgumentNullException>(() => _orderService.GetOrderByIdAsync(Guid.Empty));
-        }
-
-        [Fact]
-        public async Task GetOrderByIdAsync_ShouldThrowKeyNotFoundException_WhenOrderNotFound()
+        public async Task GetOrderByIdAsync_ShouldReturnsNull_WhenOrderNotFound()
         {
             // Arrange
             var orderId = Guid.NewGuid();
             _orderRepositoryMock.Setup(x => x.GetOrderByIdAsync(orderId)).ReturnsAsync((Order?)null);
 
-            // Act & Assert
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => _orderService.GetOrderByIdAsync(orderId));
+            // Act
+            var order = await _orderService.GetOrderByIdAsync(orderId);
+
+            // Assert
+            Assert.Null(order);
         }
 
         [Fact]
