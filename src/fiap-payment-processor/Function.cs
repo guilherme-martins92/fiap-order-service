@@ -56,7 +56,7 @@ public class Function
 
     public async Task<string> UpdatePaymentStatusAsync(Guid orderId, string status)
     {
-        var url = $"https://3usbkhj94a.execute-api.us-east-1.amazonaws.com/orders/{orderId}?status={status}";
+        string url = "https://rld8zb3bja.execute-api.us-east-1.amazonaws.com/orders/ac508b2e-26b2-4fc4-8780-b01c9c4a0199?status=teste3";
 
         var response = await _httpClient.PutAsync(url, null);
 
