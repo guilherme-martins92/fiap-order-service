@@ -29,6 +29,7 @@ namespace fiap_order_service.Infrastructure.HttpClients
                 }
                 else
                 {
+                    _logger.LogInformation("CATALOG_API_URL: {Url}", _catalogApiUrl);
                     _logger.LogWarning("Failed to fetch vehicle from catalog service. Status code: {StatusCode}", response.StatusCode);
                 }
             }
