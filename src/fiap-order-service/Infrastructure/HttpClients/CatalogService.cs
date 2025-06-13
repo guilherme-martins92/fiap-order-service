@@ -13,7 +13,7 @@ namespace fiap_order_service.Infrastructure.HttpClients
         public CatalogService(IConfiguration configuration, ILogger<CatalogService> logger)
         {
             _httpClient = new HttpClient();
-            _catalogApiUrl = configuration.GetSection("ApiSettings")["CatalogApiUrl"];
+            _catalogApiUrl = Environment.GetEnvironmentVariable("CatalogApiUrl") ?? configuration.GetSection("ApiSettings")["CatalogApiUrl"];
             _logger = logger;
         }
 
@@ -21,6 +21,8 @@ namespace fiap_order_service.Infrastructure.HttpClients
         {
             try
             {
+                _logger.LogInformation("Chamando API de catálogo em: {Url}", _catalogApiUrl);
+
                 var response = await _httpClient.GetAsync($"{_catalogApiUrl}/vehicles/{id}");
                 if (response.IsSuccessStatusCode)
                 {
@@ -29,7 +31,6 @@ namespace fiap_order_service.Infrastructure.HttpClients
                 }
                 else
                 {
-                    _logger.LogInformation("CATALOG_API_URL: {Url}", _catalogApiUrl);
                     _logger.LogWarning("Failed to fetch vehicle from catalog service. Status code: {StatusCode}", response.StatusCode);
                 }
             }
