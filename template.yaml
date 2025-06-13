@@ -24,6 +24,7 @@ Resources:
       Environment:
         Variables:
           ORDERS_TABLE: !Ref OrdersTable
+          CatalogApiUrl: "https://wzmfjcfc90.execute-api.us-east-1.amazonaws.com"
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref OrdersTable
