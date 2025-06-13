@@ -40,12 +40,12 @@ public class Function
         }
     }
 
-    public static async Task<string> ProcessPaymentAsync(PaymentRequest paymentRequest)
+    public  async Task<string> ProcessPaymentAsync(PaymentRequest paymentRequest)
     {
         try
         {
-            await UpdatePaymentStatusAsync(paymentRequest.OrderId, "PAGO");
-            return "Pagamento processado com sucesso!";
+            var teste = await UpdatePaymentStatusAsync(paymentRequest.OrderId, "PAGO");
+            return "Pagamento processado com sucesso!" + teste;
         }
         catch (Exception ex)
         {
@@ -53,7 +53,7 @@ public class Function
         }
     }
 
-    public static async Task<string> UpdatePaymentStatusAsync(Guid orderId, string status)
+    public async Task<string> UpdatePaymentStatusAsync(Guid orderId, string status)
     {
         var url = $"https://3usbkhj94a.execute-api.us-east-1.amazonaws.com/orders/{orderId}?status={status}";
 
@@ -61,7 +61,7 @@ public class Function
 
         if (response.IsSuccessStatusCode)
         {
-            return "Status de pagamento atualizado com sucesso.";
+            return "Status de pagamento atualizado com sucesso." + url;
         }
         else
         {
