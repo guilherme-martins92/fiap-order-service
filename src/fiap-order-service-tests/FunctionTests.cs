@@ -90,7 +90,7 @@ public class FunctionTests
         var function = new FunctionTestable(httpClient);
 
         // Act
-        var result = await Function.UpdatePaymentStatusAsync(orderId, status);
+        var result = await  Function.UpdatePaymentStatusAsync(orderId, status);
 
         // Assert
         Assert.Equal("Status de pagamento atualizado com sucesso.", result);

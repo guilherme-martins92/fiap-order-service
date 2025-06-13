@@ -52,7 +52,10 @@ public class Function
 
     public static async Task<string> UpdatePaymentStatusAsync(Guid orderId, string status)
     {
-        var response = await _httpClient.PutAsync($"https://rld8zb3bja.execute-api.us-east-1.amazonaws.com/orders/{orderId}?status={status}", null);
+        var url = $"https://3usbkhj94a.execute-api.us-east-1.amazonaws.com/orders/{orderId}/status={status}"; 
+
+        var response = await _httpClient.PutAsync(url, null);
+
         if (response.IsSuccessStatusCode)
         {
             return "Status de pagamento atualizado com sucesso.";
