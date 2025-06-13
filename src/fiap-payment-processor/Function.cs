@@ -46,7 +46,7 @@ public class Function
     public async Task<string> UpdatePaymentStatusAsync(string orderId, string status)
     {
         var updateContent = new StringContent(JsonSerializer.Serialize(new { OrderId = orderId, Status = status }), Encoding.UTF8, "application/json");
-        var response = await _httpClient.PutAsync($"https://3usbkhj94a.execute-api.us-east-1.amazonaws.com/orders/{orderId}/status", updateContent);
+        var response = await _httpClient.PutAsync($"https://rld8zb3bja.execute-api.us-east-1.amazonaws.com/orders/{orderId}/status", updateContent);
         if (response.IsSuccessStatusCode)
         {
             return "Status de pagamento atualizado com sucesso.";

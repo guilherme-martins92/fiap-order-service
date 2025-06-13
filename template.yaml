@@ -51,7 +51,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./src/fiap-payment-processor/
-      Handler: FunctionHandler
+      Handler: fiap-payment-processor::fiap_payment_processor.Function::FunctionHandler
       Runtime: dotnet8
       Description: Lambda function em .NET 8 para processamento assincrono de mensagens da fila PaymentProcessingQueue.
       Policies:
