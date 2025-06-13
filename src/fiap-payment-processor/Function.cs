@@ -39,11 +39,18 @@ public class Function
 
     public async Task<string> ProcessPaymentAsync(PaymentRequest paymentRequest)
     {
-        await UpdatePaymentStatusAsync(paymentRequest.OrderId, "PAGO");
-        return "Pagamento processado com sucesso!";
+        try
+        {
+            await UpdatePaymentStatusAsync(paymentRequest.OrderId, "PAGO");
+            return "Pagamento processado com sucesso!";
+        }
+        catch (Exception ex)
+        {
+            return $"Erro ao processar pagamento: {ex.Message}";
+        }
     }
 
-    public async Task<string> UpdatePaymentStatusAsync(string orderId, string status)
+    public async Task<string> UpdatePaymentStatusAsync(Guid orderId, string status)
     {
         var updateContent = new StringContent(JsonSerializer.Serialize(new { OrderId = orderId, Status = status }), Encoding.UTF8, "application/json");
         var response = await _httpClient.PutAsync($"https://rld8zb3bja.execute-api.us-east-1.amazonaws.com/orders/{orderId}/status", updateContent);

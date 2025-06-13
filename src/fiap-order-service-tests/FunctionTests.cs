@@ -11,10 +11,9 @@ public class FunctionTests
     {
         return new PaymentRequest
         {
-            OrderId = "12345",
+            OrderId = Guid.NewGuid(),
             Amount = 100.00m,
-            PaymentMethod = "credit_card",
-            Currency = "USD",
+            PaymentMethod = "credit_card",          
             CustomerEmail = "test@example.com",
             Description = "Test payment"
         };
@@ -85,7 +84,7 @@ public class FunctionTests
     public async Task UpdatePaymentStatusAsync_SuccessfulUpdate_ReturnsSuccessMessage()
     {
         // Arrange
-        var orderId = "12345";
+        var orderId = Guid.NewGuid();
         var status = "PAGO";
         var httpClient = GetMockHttpClient(HttpStatusCode.OK, HttpStatusCode.OK);
         var function = new FunctionTestable(httpClient);
@@ -101,7 +100,7 @@ public class FunctionTests
     public async Task UpdatePaymentStatusAsync_FailedUpdate_ReturnsFailureMessage()
     {
         // Arrange
-        var orderId = "12345";
+        var orderId = Guid.NewGuid();
         var status = "PAGO";
         var httpClient = GetMockHttpClient(HttpStatusCode.OK, HttpStatusCode.BadRequest);
         var function = new FunctionTestable(httpClient);
