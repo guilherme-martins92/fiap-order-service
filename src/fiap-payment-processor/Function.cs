@@ -42,14 +42,15 @@ public class Function
 
     public  async Task<string> ProcessPaymentAsync(PaymentRequest paymentRequest)
     {
+        string teste = string.Empty;
         try
         {
-            var teste = await UpdatePaymentStatusAsync(paymentRequest.OrderId, "PAGO");
+            teste = await UpdatePaymentStatusAsync(paymentRequest.OrderId, "PAGO");
             return "Pagamento processado com sucesso!" + teste;
         }
         catch (Exception ex)
         {
-            return $"Erro ao processar pagamento: {ex.Message}";
+            return $"Erro ao processar pagamento: {ex.Message}" + teste;
         }
     }
 
@@ -65,7 +66,7 @@ public class Function
         }
         else
         {
-            return $"Falha ao tentar atualizar o status de pagamento: {response.ReasonPhrase}";
+            return $"Falha ao tentar atualizar o status de pagamento: {response.ReasonPhrase} - {url}";
         }
     }
 }
