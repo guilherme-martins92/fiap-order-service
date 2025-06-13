@@ -37,7 +37,7 @@ public class Function
         }
     }
 
-    public async Task<string> ProcessPaymentAsync(PaymentRequest paymentRequest)
+    public static async Task<string> ProcessPaymentAsync(PaymentRequest paymentRequest)
     {
         try
         {
@@ -50,10 +50,12 @@ public class Function
         }
     }
 
-    public async Task<string> UpdatePaymentStatusAsync(Guid orderId, string status)
+    public static async Task<string> UpdatePaymentStatusAsync(Guid orderId, string status)
     {
-        var updateContent = new StringContent(JsonSerializer.Serialize(new { OrderId = orderId, Status = status }), Encoding.UTF8, "application/json");
-        var response = await _httpClient.PutAsync($"https://rld8zb3bja.execute-api.us-east-1.amazonaws.com/orders/{orderId}/status", updateContent);
+        var url = $"https://3usbkhj94a.execute-api.us-east-1.amazonaws.com/orders/{orderId}/status={status}"; 
+
+        var response = await _httpClient.PutAsync(url, null);
+
         if (response.IsSuccessStatusCode)
         {
             return "Status de pagamento atualizado com sucesso.";

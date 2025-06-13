@@ -74,7 +74,7 @@ public class FunctionTests
         var function = new FunctionTestable(httpClient);
 
         // Act
-        var result = await function.ProcessPaymentAsync(paymentRequest);
+        var result = await Function.ProcessPaymentAsync(paymentRequest);
 
         // Assert
         Assert.Equal("Pagamento processado com sucesso!", result);
@@ -90,7 +90,7 @@ public class FunctionTests
         var function = new FunctionTestable(httpClient);
 
         // Act
-        var result = await function.UpdatePaymentStatusAsync(orderId, status);
+        var result = await  Function.UpdatePaymentStatusAsync(orderId, status);
 
         // Assert
         Assert.Equal("Status de pagamento atualizado com sucesso.", result);
@@ -106,7 +106,7 @@ public class FunctionTests
         var function = new FunctionTestable(httpClient);
 
         // Act
-        var result = await function.UpdatePaymentStatusAsync(orderId, status);
+        var result = await Function.UpdatePaymentStatusAsync(orderId, status);
 
         // Assert
         Assert.StartsWith("Falha ao tentar atualizar o status de pagamento:", result);
