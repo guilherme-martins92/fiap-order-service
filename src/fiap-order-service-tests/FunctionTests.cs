@@ -74,7 +74,7 @@ public class FunctionTests
         var function = new FunctionTestable(httpClient);
 
         // Act
-        var result = await function.ProcessPaymentAsync(paymentRequest);
+        var result = await Function.ProcessPaymentAsync(paymentRequest);
 
         // Assert
         Assert.Equal("Pagamento processado com sucesso!", result);

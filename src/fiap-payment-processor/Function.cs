@@ -37,7 +37,7 @@ public class Function
         }
     }
 
-    public async Task<string> ProcessPaymentAsync(PaymentRequest paymentRequest)
+    public static async Task<string> ProcessPaymentAsync(PaymentRequest paymentRequest)
     {
         try
         {
