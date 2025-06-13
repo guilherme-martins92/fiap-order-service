@@ -2,6 +2,7 @@ using Amazon.Lambda.Core;
 using Amazon.Lambda.SQSEvents;
 using fiap_payment_processor.Models;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
 
@@ -9,6 +10,8 @@ using System.Text.Json;
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
 namespace fiap_payment_processor;
+
+[ExcludeFromCodeCoverage]
 public class Function
 {
     private static HttpClient _httpClient = new HttpClient();
@@ -52,7 +55,7 @@ public class Function
 
     public static async Task<string> UpdatePaymentStatusAsync(Guid orderId, string status)
     {
-        var url = $"https://3usbkhj94a.execute-api.us-east-1.amazonaws.com/orders/{orderId}/status={status}"; 
+        var url = $"https://3usbkhj94a.execute-api.us-east-1.amazonaws.com/orders/{orderId}?status={status}";
 
         var response = await _httpClient.PutAsync(url, null);
 
