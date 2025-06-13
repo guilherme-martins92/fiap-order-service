@@ -27,6 +27,10 @@ namespace fiap_order_service.Infrastructure.HttpClients
                     var vehicle = await response.Content.ReadFromJsonAsync<Vehicle>();
                     return vehicle;
                 }
+                else
+                {
+                    _logger.LogWarning("Failed to fetch vehicle from catalog service. Status code: {StatusCode}", response.StatusCode);
+                }
             }
             catch (HttpRequestException ex)
             {
