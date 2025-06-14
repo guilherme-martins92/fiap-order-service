@@ -13,6 +13,7 @@ namespace fiap_payment_processor;
 public class Function
 {
     private readonly HttpClient _httpClient = new HttpClient();
+    private readonly string _baseAddres = Environment.GetEnvironmentVariable("OrderServiceUrl") ?? "http://localhost:5000/api";
 
     public async Task FunctionHandler(SQSEvent sqsEvent, ILambdaContext context)
     {
@@ -54,17 +55,17 @@ public class Function
 
     public async Task<string> UpdatePaymentStatusAsync(Guid orderId, string status)
     {
-        string url = "https://rld8zb3bja.execute-api.us-east-1.amazonaws.com/orders/ac508b2e-26b2-4fc4-8780-b01c9c4a0199?status=testeapi";
+        string endpoint = _baseAddres + $"/orders/{orderId}?status={status}";
 
-        var response = await _httpClient.PutAsync(url, null);
+        var response = await _httpClient.PutAsync(endpoint, null);
 
         if (response.IsSuccessStatusCode)
         {
-            return "Status de pagamento atualizado com sucesso." + url;
+            return "Status de pagamento atualizado com sucesso.";
         }
         else
         {
-            return $"Falha ao tentar atualizar o status de pagamento: {response.ReasonPhrase} - {url}";
+            return $"Falha ao tentar atualizar o status de pagamento: {response.ReasonPhrase}";
         }
     }
 }
