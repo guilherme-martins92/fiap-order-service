@@ -89,6 +89,14 @@ Resources:
       VisibilityTimeout: 100
       MessageRetentionPeriod: 86400
       ReceiveMessageWaitTimeSeconds: 10
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt PaymentProcessingLetterQueue.Arn
+        maxReceiveCount: 5
+
+  PaymentProcessingLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: PaymentProcessingLetterQueue
 
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
