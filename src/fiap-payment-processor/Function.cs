@@ -1,9 +1,7 @@
 using Amazon.Lambda.Core;
 using Amazon.Lambda.SQSEvents;
 using fiap_payment_processor.Models;
-using Microsoft.Extensions.Logging;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using System.Text.Json;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
@@ -12,11 +10,11 @@ using System.Text.Json;
 namespace fiap_payment_processor;
 
 [ExcludeFromCodeCoverage]
-public static class Function
+public class Function
 {
-    private static HttpClient _httpClient = new HttpClient();
+    private readonly HttpClient _httpClient = new HttpClient();
 
-    public static async Task FunctionHandler(SQSEvent sqsEvent, ILambdaContext context)
+    public async Task FunctionHandler(SQSEvent sqsEvent, ILambdaContext context)
     {
         foreach (var record in sqsEvent.Records)
         {
@@ -40,7 +38,7 @@ public static class Function
         }
     }
 
-    public static async Task<string> ProcessPaymentAsync(PaymentRequest paymentRequest)
+    public async Task<string> ProcessPaymentAsync(PaymentRequest paymentRequest)
     {
         string teste = string.Empty;
         try
@@ -54,7 +52,7 @@ public static class Function
         }
     }
 
-    public static async Task<string> UpdatePaymentStatusAsync(Guid orderId, string status)
+    public async Task<string> UpdatePaymentStatusAsync(Guid orderId, string status)
     {
         string url = "https://rld8zb3bja.execute-api.us-east-1.amazonaws.com/orders/ac508b2e-26b2-4fc4-8780-b01c9c4a0199?status=testeapi";
 
