@@ -163,7 +163,7 @@ public class FunctionTests
         contextMock.SetupGet(c => c.Logger).Returns(loggerMock.Object);
 
         // Act
-        await function.FunctionHandler(sqsEvent, contextMock.Object);
+        await Function.FunctionHandler(sqsEvent, contextMock.Object);
 
         // Assert
         loggerMock.Verify(l => l.LogError(It.Is<string>(s => s.StartsWith("Error processing record:"))), Times.Once);

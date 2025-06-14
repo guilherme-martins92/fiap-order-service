@@ -16,7 +16,7 @@ public class Function
 {
     private static HttpClient _httpClient = new HttpClient();
 
-    public async Task FunctionHandler(SQSEvent sqsEvent, ILambdaContext context)
+    public static async Task FunctionHandler(SQSEvent sqsEvent, ILambdaContext context)
     {
         foreach (var record in sqsEvent.Records)
         {
@@ -40,7 +40,7 @@ public class Function
         }
     }
 
-    public  async Task<string> ProcessPaymentAsync(PaymentRequest paymentRequest)
+    public static async Task<string> ProcessPaymentAsync(PaymentRequest paymentRequest)
     {
         string teste = string.Empty;
         try
@@ -54,9 +54,9 @@ public class Function
         }
     }
 
-    public async Task<string> UpdatePaymentStatusAsync(Guid orderId, string status)
+    public static async Task<string> UpdatePaymentStatusAsync(Guid orderId, string status)
     {
-        string url = "https://rld8zb3bja.execute-api.us-east-1.amazonaws.com/orders/ac508b2e-26b2-4fc4-8780-b01c9c4a0199?status=teste3";
+        string url = "https://rld8zb3bja.execute-api.us-east-1.amazonaws.com/orders/ac508b2e-26b2-4fc4-8780-b01c9c4a0199?status=testeapi";
 
         var response = await _httpClient.PutAsync(url, null);
 
