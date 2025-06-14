@@ -13,7 +13,7 @@ namespace fiap_payment_processor;
 public class Function
 {
     private readonly HttpClient _httpClient = new HttpClient();
-    private readonly string _baseAddres = Environment.GetEnvironmentVariable("OrderServiceUrl") ?? "http://localhost:5000/api";
+    private readonly string _baseAddres = Environment.GetEnvironmentVariable("ORDER_API_URL") ?? "http://localhost:5000/api";
 
     public async Task FunctionHandler(SQSEvent sqsEvent, ILambdaContext context)
     {
@@ -35,6 +35,7 @@ public class Function
             catch (Exception ex)
             {
                 context.Logger.LogError($"Error processing record: {ex.Message}");
+                throw;
             }
         }
     }
