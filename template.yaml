@@ -54,6 +54,9 @@ Resources:
       Handler: fiap-payment-processor::fiap_payment_processor.Function::FunctionHandler
       Runtime: dotnet8
       Description: Lambda function em .NET 8 para processamento assincrono de mensagens da fila PaymentProcessingQueue.
+      Environment:
+        Variables:
+          ORDER_API_URL: "https://rld8zb3bja.execute-api.us-east-1.amazonaws.com"
       Policies:
         - AWSLambdaBasicExecutionRole
         - SQSPollerPolicy:
