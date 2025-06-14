@@ -12,7 +12,7 @@ using System.Text.Json;
 namespace fiap_payment_processor;
 
 [ExcludeFromCodeCoverage]
-public class Function
+public static class Function
 {
     private static HttpClient _httpClient = new HttpClient();
 
