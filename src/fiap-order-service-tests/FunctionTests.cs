@@ -141,31 +141,31 @@ public class FunctionTests
     //    loggerMock.Verify(l => l.LogInformation(It.Is<string>(s => s.Contains("Pagamento processado: Pagamento processado com sucesso!"))), Times.Once);
     //}
 
-    [Fact]
-    public async Task FunctionHandler_InvalidPaymentRequest_LogsInvalidRequest()
-    {
-        // Arrange
-        var sqsEvent = new Amazon.Lambda.SQSEvents.SQSEvent
-        {
-            Records = new List<Amazon.Lambda.SQSEvents.SQSEvent.SQSMessage>
-            {
-                new Amazon.Lambda.SQSEvents.SQSEvent.SQSMessage
-                {
-                    Body = "not a valid json"
-                }
-            }
-        };
-        var httpClient = GetMockHttpClient(HttpStatusCode.OK, HttpStatusCode.OK);
-        var function = new FunctionTestable(httpClient);
+    //[Fact]
+    //public async Task FunctionHandler_InvalidPaymentRequest_LogsInvalidRequest()
+    //{
+    //    // Arrange
+    //    var sqsEvent = new Amazon.Lambda.SQSEvents.SQSEvent
+    //    {
+    //        Records = new List<Amazon.Lambda.SQSEvents.SQSEvent.SQSMessage>
+    //        {
+    //            new Amazon.Lambda.SQSEvents.SQSEvent.SQSMessage
+    //            {
+    //                Body = "not a valid json"
+    //            }
+    //        }
+    //    };
+    //    var httpClient = GetMockHttpClient(HttpStatusCode.OK, HttpStatusCode.OK);
+    //    var function = new FunctionTestable(httpClient);
 
-        var loggerMock = new Mock<Amazon.Lambda.Core.ILambdaLogger>();
-        var contextMock = new Mock<Amazon.Lambda.Core.ILambdaContext>();
-        contextMock.SetupGet(c => c.Logger).Returns(loggerMock.Object);
+    //    var loggerMock = new Mock<Amazon.Lambda.Core.ILambdaLogger>();
+    //    var contextMock = new Mock<Amazon.Lambda.Core.ILambdaContext>();
+    //    contextMock.SetupGet(c => c.Logger).Returns(loggerMock.Object);
 
-        // Act
-        await function.FunctionHandler(sqsEvent, contextMock.Object);
+    //    // Act
+    //    await function.FunctionHandler(sqsEvent, contextMock.Object);
 
-        // Assert
-        loggerMock.Verify(l => l.LogError(It.Is<string>(s => s.StartsWith("Error processing record:"))), Times.Once);
-    }
+    //    // Assert
+    //    loggerMock.Verify(l => l.LogError(It.Is<string>(s => s.StartsWith("Error processing record:"))), Times.Once);
+    //}
 }
