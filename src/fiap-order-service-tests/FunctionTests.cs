@@ -1,57 +1,133 @@
-using System.Net;
 using fiap_payment_processor;
 using fiap_payment_processor.Models;
 using Moq;
 using Moq.Protected;
+using System.Net;
 
 namespace fiap_payment_processor_tests;
 public class FunctionTests
 {
-    private PaymentRequest GetSamplePaymentRequest()
+    [Fact]
+    public async Task ProcessPaymentAsync_ReturnsSuccess_WhenUpdateSucceeds()
     {
-        return new PaymentRequest
+        // Arrange
+        var paymentRequest = new PaymentRequest
         {
             OrderId = Guid.NewGuid(),
-            Amount = 100.00m,
-            PaymentMethod = "credit_card",          
+            Amount = 100,
+            PaymentMethod = "CreditCard",
             CustomerEmail = "test@example.com",
-            Description = "Test payment"
+            Description = "Test"
         };
+
+        var handlerMock = new Mock<HttpMessageHandler>();
+        handlerMock
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK
+            });
+
+        var httpClient = new HttpClient(handlerMock.Object);
+        var function = new FunctionTestable(httpClient);
+
+        // Act
+        var result = await function.ProcessPaymentAsync(paymentRequest);
+
+        // Assert
+        Assert.Contains("Pagamento processado com sucesso!", result);
+        Assert.Contains("Status de pagamento atualizado com sucesso.", result);
     }
 
-    private HttpClient GetMockHttpClient(HttpStatusCode postStatus, HttpStatusCode putStatus)
+    [Fact]
+    public async Task ProcessPaymentAsync_ReturnsError_WhenUpdateFails()
     {
+        // Arrange
+        var paymentRequest = new PaymentRequest
+        {
+            OrderId = Guid.NewGuid(),
+            Amount = 100,
+            PaymentMethod = "CreditCard",
+            CustomerEmail = "test@example.com",
+            Description = "Test"
+        };
+
         var handlerMock = new Mock<HttpMessageHandler>();
-
-        handlerMock.Protected()
+        handlerMock
+            .Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
-                ItExpr.Is<HttpRequestMessage>(req =>
-                    req.Method == HttpMethod.Post &&
-                    req.RequestUri!.ToString().Contains("process-payment")),
-                ItExpr.IsAny<CancellationToken>()
-            )
-            .ReturnsAsync(new HttpResponseMessage
-            {
-                StatusCode = postStatus,
-                Content = new StringContent("")
-            });
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ThrowsAsync(new Exception("Network error"));
 
-        handlerMock.Protected()
+        var httpClient = new HttpClient(handlerMock.Object);
+        var function = new FunctionTestable(httpClient);
+
+        // Act
+        var result = await function.ProcessPaymentAsync(paymentRequest);
+
+        // Assert
+        Assert.Contains("Erro ao processar pagamento: Network error", result);
+    }
+
+    [Fact]
+    public async Task UpdatePaymentStatusAsync_ReturnsSuccess_WhenApiReturnsOk()
+    {
+        // Arrange
+        var orderId = Guid.NewGuid();
+        var handlerMock = new Mock<HttpMessageHandler>();
+        handlerMock
+            .Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
-                ItExpr.Is<HttpRequestMessage>(req =>
-                    req.Method == HttpMethod.Put &&
-                    req.RequestUri!.ToString().Contains("/status")),
-                ItExpr.IsAny<CancellationToken>()
-            )
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
             .ReturnsAsync(new HttpResponseMessage
             {
-                StatusCode = putStatus,
-                Content = new StringContent("")
+                StatusCode = HttpStatusCode.OK
             });
 
-        return new HttpClient(handlerMock.Object);
+        var httpClient = new HttpClient(handlerMock.Object);
+        var function = new FunctionTestable(httpClient);
+
+        // Act
+        var result = await function.UpdatePaymentStatusAsync(orderId, "PAGO");
+
+        // Assert
+        Assert.Equal("Status de pagamento atualizado com sucesso.", result);
+    }
+
+    [Fact]
+    public async Task UpdatePaymentStatusAsync_ReturnsFailure_WhenApiReturnsError()
+    {
+        // Arrange
+        var orderId = Guid.NewGuid();
+        var handlerMock = new Mock<HttpMessageHandler>();
+        handlerMock
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.BadRequest,
+                ReasonPhrase = "Bad Request"
+            });
+
+        var httpClient = new HttpClient(handlerMock.Object);
+        var function = new FunctionTestable(httpClient);
+
+        // Act
+        var result = await function.UpdatePaymentStatusAsync(orderId, "PAGO");
+
+        // Assert
+        Assert.Equal("Falha ao tentar atualizar o status de pagamento: Bad Request", result);
     }
 
     // Helper class to inject HttpClient
@@ -60,112 +136,8 @@ public class FunctionTests
         public FunctionTestable(HttpClient httpClient)
         {
             typeof(Function)
-                .GetField("_httpClient", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!
-                .SetValue(null, httpClient);
+                .GetField("_httpClient", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                ?.SetValue(this, httpClient);
         }
     }
-
-    //[Fact]
-    //public async Task ProcessPaymentAsync_SuccessfulPayment_ReturnsSuccessMessage()
-    //{
-    //    // Arrange
-    //    var paymentRequest = GetSamplePaymentRequest();
-    //    var httpClient = GetMockHttpClient(HttpStatusCode.OK, HttpStatusCode.OK);
-    //    var function = new FunctionTestable(httpClient);
-
-    //    // Act
-    //    var result = await Function.ProcessPaymentAsync(paymentRequest);
-
-    //    // Assert
-    //    Assert.Equal("Pagamento processado com sucesso!", result);
-    //}
-
-    //[Fact]
-    //public async Task UpdatePaymentStatusAsync_SuccessfulUpdate_ReturnsSuccessMessage()
-    //{
-    //    // Arrange
-    //    var orderId = Guid.NewGuid();
-    //    var status = "PAGO";
-    //    var httpClient = GetMockHttpClient(HttpStatusCode.OK, HttpStatusCode.OK);
-    //    var function = new FunctionTestable(httpClient);
-
-    //    // Act
-    //    var result = await Function.UpdatePaymentStatusAsync(orderId, status);
-
-    //    // Assert
-    //    Assert.Equal("Status de pagamento atualizado com sucesso.", result);
-    //}
-
-    //[Fact]
-    //public async Task UpdatePaymentStatusAsync_FailedUpdate_ReturnsFailureMessage()
-    //{
-    //    // Arrange
-    //    var orderId = Guid.NewGuid();
-    //    var status = "PAGO";
-    //    var httpClient = GetMockHttpClient(HttpStatusCode.OK, HttpStatusCode.BadRequest);
-    //    var function = new FunctionTestable(httpClient);
-
-    //    // Act
-    //    var result = await Function.UpdatePaymentStatusAsync(orderId, status);
-
-    //    // Assert
-    //    Assert.StartsWith("Falha ao tentar atualizar o status de pagamento:", result);
-    //}
-
-    //[Fact]
-    //public async Task FunctionHandler_ValidPaymentRequest_ProcessesPayment()
-    //{
-    //    // Arrange
-    //    var paymentRequest = GetSamplePaymentRequest();
-    //    var sqsEvent = new Amazon.Lambda.SQSEvents.SQSEvent
-    //    {
-    //        Records = new List<Amazon.Lambda.SQSEvents.SQSEvent.SQSMessage>
-    //        {
-    //            new Amazon.Lambda.SQSEvents.SQSEvent.SQSMessage
-    //            {
-    //                Body = System.Text.Json.JsonSerializer.Serialize(paymentRequest)
-    //            }
-    //        }
-    //    };
-    //    var httpClient = GetMockHttpClient(HttpStatusCode.OK, HttpStatusCode.OK);
-    //    var function = new FunctionTestable(httpClient);
-
-    //    var loggerMock = new Mock<Amazon.Lambda.Core.ILambdaLogger>();
-    //    var contextMock = new Mock<Amazon.Lambda.Core.ILambdaContext>();
-    //    contextMock.SetupGet(c => c.Logger).Returns(loggerMock.Object);
-
-    //    // Act
-    //    await function.FunctionHandler(sqsEvent, contextMock.Object);
-
-    //    // Assert
-    //    loggerMock.Verify(l => l.LogInformation(It.Is<string>(s => s.Contains("Pagamento processado: Pagamento processado com sucesso!"))), Times.Once);
-    //}
-
-    //[Fact]
-    //public async Task FunctionHandler_InvalidPaymentRequest_LogsInvalidRequest()
-    //{
-    //    // Arrange
-    //    var sqsEvent = new Amazon.Lambda.SQSEvents.SQSEvent
-    //    {
-    //        Records = new List<Amazon.Lambda.SQSEvents.SQSEvent.SQSMessage>
-    //        {
-    //            new Amazon.Lambda.SQSEvents.SQSEvent.SQSMessage
-    //            {
-    //                Body = "not a valid json"
-    //            }
-    //        }
-    //    };
-    //    var httpClient = GetMockHttpClient(HttpStatusCode.OK, HttpStatusCode.OK);
-    //    var function = new FunctionTestable(httpClient);
-
-    //    var loggerMock = new Mock<Amazon.Lambda.Core.ILambdaLogger>();
-    //    var contextMock = new Mock<Amazon.Lambda.Core.ILambdaContext>();
-    //    contextMock.SetupGet(c => c.Logger).Returns(loggerMock.Object);
-
-    //    // Act
-    //    await function.FunctionHandler(sqsEvent, contextMock.Object);
-
-    //    // Assert
-    //    loggerMock.Verify(l => l.LogError(It.Is<string>(s => s.StartsWith("Error processing record:"))), Times.Once);
-    //}
 }
