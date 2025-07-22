@@ -1,8 +1,10 @@
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DataModel;
+using Amazon.EventBridge;
 using Amazon.SQS;
 using fiap_order_service.Configurations;
 using fiap_order_service.Endpoints;
+using fiap_order_service.Infrastructure.EventBridge;
 using fiap_order_service.Infrastructure.HttpClients;
 using fiap_order_service.Messaging;
 using fiap_order_service.Repositories;
@@ -20,6 +22,7 @@ builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ICatalogService, CatalogService>();
 builder.Services.AddScoped<ISqsClientService, SqsClientService>();
+builder.Services.AddScoped<IEventPublisher, EventBridgePublisher>();
 builder.Services.Configure<ApiSettings>(builder.Configuration.GetSection("ApiSettings"));
 builder.Services.AddValidatorsFromAssemblyContaining<OrderDtoValidator>();
 builder.Services.AddSingleton<IDynamoDBContext, DynamoDBContext>();
@@ -42,6 +45,11 @@ builder.Services.AddSingleton<IAmazonDynamoDB>(sp =>
 builder.Services.AddSingleton<IAmazonSQS>(sp =>
 {
     return new AmazonSQSClient();
+});
+
+builder.Services.AddSingleton<IAmazonEventBridge>(sp =>
+{
+    return new AmazonEventBridgeClient();
 });
 
 var app = builder.Build();
