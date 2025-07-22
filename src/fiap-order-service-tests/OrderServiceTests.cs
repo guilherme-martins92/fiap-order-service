@@ -1,5 +1,6 @@
 using fiap_order_service.Constants;
 using fiap_order_service.Dtos;
+using fiap_order_service.Infrastructure.EventBridge;
 using fiap_order_service.Infrastructure.HttpClients;
 using fiap_order_service.Messaging;
 using fiap_order_service.Models;
@@ -16,6 +17,7 @@ namespace fiap_order_service_tests.Services
         private readonly Mock<ICatalogService> _catalogServiceMock;
         private readonly Mock<ILogger<OrderService>> _loggerMock;
         private readonly Mock<ISqsClientService> _sqsClientServiceMock;
+        private readonly Mock<IEventPublisher> _eventPublisherMock;
         private readonly OrderService _orderService;
 
         public OrderServiceTests()
@@ -24,7 +26,9 @@ namespace fiap_order_service_tests.Services
             _catalogServiceMock = new Mock<ICatalogService>();
             _loggerMock = new Mock<ILogger<OrderService>>();
             _sqsClientServiceMock = new Mock<ISqsClientService>();
-            _orderService = new OrderService(_orderRepositoryMock.Object, _catalogServiceMock.Object, _loggerMock.Object, _sqsClientServiceMock.Object);
+            _eventPublisherMock = new Mock<IEventPublisher>();
+
+            _orderService = new OrderService(_orderRepositoryMock.Object, _catalogServiceMock.Object, _loggerMock.Object, _sqsClientServiceMock.Object, _eventPublisherMock.Object);
         }
 
         [Fact]
@@ -37,9 +41,10 @@ namespace fiap_order_service_tests.Services
                 CustomerDocument = "12345678900",
                 CustomerName = "John Doe",
                 CustomerEmail = "john@doe.com",
-                Itens = new List<ItemOrderDto>
+                Item = new ItemOrderDto
                 {
-                    new ItemOrderDto { VehicleExternalId = vehicleId, Amount = 2 }
+                    VehicleExternalId = vehicleId,
+                    Amount = 2
                 }
             };
 
@@ -62,9 +67,9 @@ namespace fiap_order_service_tests.Services
             // Assert
             Assert.NotNull(result);
             Assert.Equal(orderDto.CustomerDocument, result.CustomerDocument);
-            Assert.Single(result.Itens);
-            Assert.Equal(vehicleId, result.Itens[0].VehicleId);
+            Assert.Equal(vehicleId, result.Item!.VehicleId);
             Assert.Equal(200000m, result.TotalPrice);
+            _eventPublisherMock.Verify(x => x.PublicarCompraRealizadaAsync(result.Id, vehicleId), Times.Once);
         }
 
         [Fact]
@@ -77,9 +82,10 @@ namespace fiap_order_service_tests.Services
                 CustomerDocument = "12345678900",
                 CustomerName = "John Doe",
                 CustomerEmail = "john@doe.com",
-                Itens = new List<ItemOrderDto>
+                Item = new ItemOrderDto
                 {
-                    new ItemOrderDto { VehicleExternalId = vehicleId, Amount = 1 }
+                    VehicleExternalId = vehicleId,
+                    Amount = 1
                 }
             };
 
@@ -99,9 +105,10 @@ namespace fiap_order_service_tests.Services
                 CustomerDocument = "12345678900",
                 CustomerName = "John Doe",
                 CustomerEmail = "john@doe.com",
-                Itens = new List<ItemOrderDto>
+                Item = new ItemOrderDto
                 {
-                    new ItemOrderDto { VehicleExternalId = vehicleId, Amount = 1 }
+                    VehicleExternalId = vehicleId,
+                    Amount = 1
                 }
             };
 
@@ -126,10 +133,34 @@ namespace fiap_order_service_tests.Services
         public async Task GetAllOrdersAsync_ShouldReturnOrderedOrders_WhenOrdersExist()
         {
             // Arrange
+            var ItemOrder1 = new ItemOrder
+            {
+                VehicleId = Guid.NewGuid(),
+                Model = "Model Y",
+                Brand = "Tesla",
+                Color = "Red",
+                Year = 2023,
+                Amount = 1,
+                UnitPrice = 150000m,
+                TotalPrice = 150000m
+            };
+
+            var ItemOrder2 = new ItemOrder
+            {
+                VehicleId = Guid.NewGuid(),
+                Model = "Model 3",
+                Brand = "Tesla",
+                Color = "Blue",
+                Year = 2022,
+                Amount = 1,
+                UnitPrice = 100000m,
+                TotalPrice = 100000m
+            };
+
             var orders = new List<Order>
             {
-                new Order { Id = Guid.NewGuid(), CustomerDocument = "1", CustomerName = "A", CustomerEmail = "a@a.com", Status = "Created", TotalPrice = 300, Itens = new List<ItemOrder>(), CreatedDate = DateTime.UtcNow },
-                new Order { Id = Guid.NewGuid(), CustomerDocument = "2", CustomerName = "B", CustomerEmail = "b@b.com", Status = "Created", TotalPrice = 100, Itens = new List<ItemOrder>(), CreatedDate = DateTime.UtcNow }
+                new Order { Id = Guid.NewGuid(), CustomerDocument = "1", CustomerName = "A", CustomerEmail = "a@a.com", Status = "Created", TotalPrice = 300,Item = ItemOrder1, CreatedDate = DateTime.UtcNow },
+                new Order { Id = Guid.NewGuid(), CustomerDocument = "2", CustomerName = "B", CustomerEmail = "b@b.com", Status = "Created", TotalPrice = 100, Item = ItemOrder2, CreatedDate = DateTime.UtcNow }
             };
             _orderRepositoryMock.Setup(x => x.GetAllOrdersAsync()).ReturnsAsync(orders);
 
@@ -169,9 +200,20 @@ namespace fiap_order_service_tests.Services
                 CustomerEmail = "a@a.com",
                 Status = "Created",
                 TotalPrice = 100,
-                Itens = new List<ItemOrder>(),
+                Item = new ItemOrder
+                {
+                    VehicleId = Guid.NewGuid(),
+                    Model = "Model X",
+                    Brand = "Tesla",
+                    Color = "Black",
+                    Year = 2022,
+                    Amount = 1,
+                    UnitPrice = 100000m,
+                    TotalPrice = 100000m
+                },
                 CreatedDate = DateTime.UtcNow
             };
+
             _orderRepositoryMock.Setup(x => x.GetOrderByIdAsync(orderId)).ReturnsAsync(order);
 
             // Act
@@ -209,9 +251,20 @@ namespace fiap_order_service_tests.Services
                 CustomerEmail = "a@a.com",
                 Status = "Created",
                 TotalPrice = 100,
-                Itens = new List<ItemOrder>(),
+                Item = new ItemOrder
+                {
+                    VehicleId = Guid.NewGuid(),
+                    Model = "Model Y",
+                    Brand = "Tesla",
+                    Color = "Red",
+                    Year = 2023,
+                    Amount = 1,
+                    UnitPrice = 100000m,
+                    TotalPrice = 100000m
+                },
                 CreatedDate = DateTime.UtcNow
             };
+
             _orderRepositoryMock.Setup(x => x.GetOrderByIdAsync(orderId)).ReturnsAsync(order);
             _orderRepositoryMock.Setup(x => x.UpdateStatusOrderAsync(orderId, It.IsAny<Order>())).ReturnsAsync((Guid id, Order o) => o);
 
@@ -221,6 +274,45 @@ namespace fiap_order_service_tests.Services
             // Assert
             Assert.NotNull(result);
             Assert.Equal("Completed", result.Status);
+        }
+
+        [Fact]
+        public async Task UpdateStatusOrderAsync_ShouldPublicEvent_WhenStatusIsCanceled()
+        {
+            // Arrange
+            var orderId = Guid.NewGuid();
+            var order = new Order
+            {
+                Id = orderId,
+                CustomerDocument = "1",
+                CustomerName = "A",
+                CustomerEmail = "a@a.com",
+                Status = "CANCELADO",
+                TotalPrice = 100,
+                Item = new ItemOrder
+                {
+                    VehicleId = Guid.NewGuid(),
+                    Model = "Model Y",
+                    Brand = "Tesla",
+                    Color = "Red",
+                    Year = 2023,
+                    Amount = 1,
+                    UnitPrice = 100000m,
+                    TotalPrice = 100000m
+                },
+                CreatedDate = DateTime.UtcNow
+            };
+
+            _orderRepositoryMock.Setup(x => x.GetOrderByIdAsync(orderId)).ReturnsAsync(order);
+            _orderRepositoryMock.Setup(x => x.UpdateStatusOrderAsync(orderId, It.IsAny<Order>())).ReturnsAsync((Guid id, Order o) => o);
+
+            // Act
+            var result = await _orderService.UpdateStatusOrderAsync(orderId, "CANCELADO");
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal("CANCELADO", result.Status);
+            _eventPublisherMock.Verify(x => x.PublicarCompraCanceladaAsync(orderId, order.Item!.VehicleId), Times.Once);
         }
 
         [Fact]
@@ -261,7 +353,17 @@ namespace fiap_order_service_tests.Services
                 CustomerEmail = "john@doe.com",
                 Status = OrderStatus.Created,
                 TotalPrice = 50000m,
-                Itens = new List<ItemOrder>(),
+                Item = new ItemOrder
+                {
+                    VehicleId = Guid.NewGuid(),
+                    Model = "Model S",
+                    Brand = "Tesla",
+                    Color = "White",
+                    Year = 2021,
+                    Amount = 1,
+                    UnitPrice = 50000m,
+                    TotalPrice = 50000m
+                },
                 CreatedDate = DateTime.UtcNow
             };
 
@@ -300,7 +402,17 @@ namespace fiap_order_service_tests.Services
                 CustomerEmail = "john@doe.com",
                 Status = OrderStatus.Created,
                 TotalPrice = 50000m,
-                Itens = new List<ItemOrder>(),
+                Item = new ItemOrder
+                {
+                    VehicleId = Guid.NewGuid(),
+                    Model = "Model S",
+                    Brand = "Tesla",
+                    Color = "White",
+                    Year = 2021,
+                    Amount = 1,
+                    UnitPrice = 50000m,
+                    TotalPrice = 50000m
+                },
                 CreatedDate = DateTime.UtcNow
             };
 
@@ -324,7 +436,17 @@ namespace fiap_order_service_tests.Services
                 CustomerEmail = "john@doe.com",
                 Status = OrderStatus.Created,
                 TotalPrice = 50000m,
-                Itens = new List<ItemOrder>(),
+                Item = new ItemOrder
+                {
+                    VehicleId = Guid.NewGuid(),
+                    Model = "Model S",
+                    Brand = "Tesla",
+                    Color = "White",
+                    Year = 2021,
+                    Amount = 1,
+                    UnitPrice = 50000m,
+                    TotalPrice = 50000m
+                },
                 CreatedDate = DateTime.UtcNow
             };
 

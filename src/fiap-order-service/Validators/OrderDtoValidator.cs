@@ -18,9 +18,9 @@ namespace fiap_order_service.Validators
             RuleFor(x => x.CustomerEmail)
                 .NotEmpty().WithMessage("Customer email is required.")
                 .EmailAddress().WithMessage("Invalid email format.");
-            RuleFor(x => x.Itens)
+            RuleFor(x => x.Item)
                 .NotEmpty().WithMessage("At least one item is required.");
-            RuleForEach(x => x.Itens).ChildRules(itens =>
+            RuleFor(x => x.Item).ChildRules(itens =>
             {
                 itens.RuleFor(x => x.VehicleExternalId)
                     .NotEmpty().WithMessage("Vehicle external ID is required.");
