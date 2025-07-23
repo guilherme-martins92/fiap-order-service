@@ -1,5 +1,6 @@
 ﻿using fiap_order_service.Constants;
 using fiap_order_service.Dtos;
+using fiap_order_service.Infrastructure.EventBridge;
 using fiap_order_service.Infrastructure.HttpClients;
 using fiap_order_service.Messaging;
 using fiap_order_service.Models;
@@ -13,13 +14,15 @@ namespace fiap_order_service.Services
         private readonly ICatalogService _catalogService;
         private readonly ILogger<OrderService> _logger;
         private readonly ISqsClientService _sqsClientService;
+        private readonly IEventPublisher _eventBridgePublisher;
 
-        public OrderService(IOrderRepository orderRepository, ICatalogService catalogService, ILogger<OrderService> logger, ISqsClientService sqsClientService)
+        public OrderService(IOrderRepository orderRepository, ICatalogService catalogService, ILogger<OrderService> logger, ISqsClientService sqsClientService, IEventPublisher eventBridgePublisher)
         {
             _orderRepository = orderRepository;
             _catalogService = catalogService;
             _logger = logger;
             _sqsClientService = sqsClientService;
+            _eventBridgePublisher = eventBridgePublisher;
         }
 
         public async Task<Order> CreateOrderAsync(OrderDto orderDto)
@@ -27,6 +30,11 @@ namespace fiap_order_service.Services
             try
             {
                 _logger.LogInformation("Criando pedido com os dados: {@OrderDto}", orderDto);
+                if (orderDto == null)
+                    throw new ArgumentNullException(nameof(orderDto), "O pedido não pode ser nulo.");
+
+                if (orderDto.Item == null)
+                    throw new ArgumentNullException(nameof(orderDto), "O item do pedido não pode ser nulo.");
 
                 var order = new Order
                 {
@@ -39,37 +47,34 @@ namespace fiap_order_service.Services
                     UpdatedDate = DateTime.UtcNow
                 };
 
-                foreach (var item in orderDto.Itens)
+                var vehicle = await _catalogService.GetVehicleByIdAsync(orderDto.Item.VehicleExternalId);
+
+                if (vehicle == null)
                 {
-                    var vehicle = await _catalogService.GetVehicleByIdAsync(item.VehicleExternalId);
-
-                    if (vehicle == null)
-                    {
-                        _logger.LogInformation("Veículo com ID {VehicleId} não encontrado.", item.VehicleExternalId);
-                        throw new KeyNotFoundException();
-                    }
-
-                    order.Itens.Add(new ItemOrder
-                    {
-                        VehicleId = vehicle.Id,
-                        UnitPrice = vehicle.Price,
-                        Amount = item.Amount,
-                        TotalPrice = vehicle.Price * item.Amount,
-                        Model = vehicle.Model,
-                        Brand = vehicle.Brand,
-                        Color = vehicle.Color,
-                        Year = vehicle.Year
-                    });
+                    _logger.LogInformation("Veículo com ID {VehicleId} não encontrado.", orderDto.Item.VehicleExternalId);
+                    throw new KeyNotFoundException();
                 }
 
-                order.TotalPrice = order.Itens.Sum(i => i.TotalPrice);
+                order.Item = new ItemOrder
+                {
+                    VehicleId = vehicle.Id,
+                    Model = vehicle.Model,
+                    Brand = vehicle.Brand,
+                    Color = vehicle.Color,
+                    Amount = orderDto.Item.Amount,
+                    UnitPrice = vehicle.Price,
+                    TotalPrice = vehicle.Price * orderDto.Item.Amount,
+                    Year = vehicle.Year
+                };
+
+                order.TotalPrice = order.Item.TotalPrice;
 
                 var createdOrder = await _orderRepository.CreateOrderAsync(order);
 
                 if (createdOrder == null)
                     throw new InvalidOperationException("Falha ao criar o pedido");
 
-                await SendOrderToPaymentQueue(createdOrder);
+                await _eventBridgePublisher.PublicarCompraRealizadaAsync(createdOrder.Id, createdOrder.Item!.VehicleId);
 
                 _logger.LogInformation("Pedido criado com sucesso: {@Order}", createdOrder);
 
@@ -130,6 +135,9 @@ namespace fiap_order_service.Services
 
             if (updatedOrder == null)
                 throw new InvalidOperationException("Falha ao atualizar o pedido");
+
+            if (status == "CANCELADO")
+                await _eventBridgePublisher.PublicarCompraCanceladaAsync(updatedOrder.Id, updatedOrder.Item.VehicleId);
 
             return updatedOrder;
         }

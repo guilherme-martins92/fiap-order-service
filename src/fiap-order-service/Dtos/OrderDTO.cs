@@ -5,6 +5,6 @@
         public required string CustomerDocument { get; set; }
         public required string CustomerName { get; set; }
         public required string CustomerEmail { get; set; }
-        public List<ItemOrderDto> Itens { get; set; } = new List<ItemOrderDto>();
+        public ItemOrderDto? Item { get; set; }
     }
 }
