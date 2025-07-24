@@ -21,6 +21,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ICatalogService, CatalogService>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<ISqsClientService, SqsClientService>();
 builder.Services.AddScoped<IEventPublisher, EventBridgePublisher>();
 builder.Services.Configure<ApiSettings>(builder.Configuration.GetSection("ApiSettings"));

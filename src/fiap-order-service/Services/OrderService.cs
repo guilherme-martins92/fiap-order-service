@@ -15,14 +15,16 @@ namespace fiap_order_service.Services
         private readonly ILogger<OrderService> _logger;
         private readonly ISqsClientService _sqsClientService;
         private readonly IEventPublisher _eventBridgePublisher;
+        private readonly ICustomerService _customerService;
 
-        public OrderService(IOrderRepository orderRepository, ICatalogService catalogService, ILogger<OrderService> logger, ISqsClientService sqsClientService, IEventPublisher eventBridgePublisher)
+        public OrderService(IOrderRepository orderRepository, ICatalogService catalogService, ILogger<OrderService> logger, ISqsClientService sqsClientService, IEventPublisher eventBridgePublisher, ICustomerService customerService)
         {
             _orderRepository = orderRepository;
             _catalogService = catalogService;
             _logger = logger;
             _sqsClientService = sqsClientService;
             _eventBridgePublisher = eventBridgePublisher;
+            _customerService = customerService;
         }
 
         public async Task<Order> CreateOrderAsync(OrderDto orderDto)
@@ -36,38 +38,40 @@ namespace fiap_order_service.Services
                 if (orderDto.Item == null)
                     throw new ArgumentNullException(nameof(orderDto), "O item do pedido não pode ser nulo.");
 
+                var customer = await _customerService.GetCustomerByIdAsync(orderDto.Customer.Id);
+
+                if (customer == null)
+                {
+                    _logger.LogInformation("Cliente não encontrado.");
+                    throw new KeyNotFoundException("Cliente não encontrado.");
+                }
+
+                var vehicle = await _catalogService.GetVehicleByIdAsync(orderDto.Item.VehicleExternalId);
+                if (vehicle == null)
+                {
+                    _logger.LogInformation("Veículo com ID {VehicleId} não encontrado.", orderDto.Item.VehicleExternalId);
+                    throw new KeyNotFoundException("Veículo não encontrado.");
+                }
                 var order = new Order
                 {
                     Id = Guid.NewGuid(),
-                    CustomerDocument = orderDto.CustomerDocument,
-                    CustomerName = orderDto.CustomerName,
-                    CustomerEmail = orderDto.CustomerEmail,
+                    Customer = customer,
+                    Item = new ItemOrder
+                    {
+                        VehicleId = vehicle.Id,
+                        Model = vehicle.Model,
+                        Brand = vehicle.Brand,
+                        Color = vehicle.Color,
+                        Amount = orderDto.Item.Amount,
+                        UnitPrice = vehicle.Price,
+                        TotalPrice = vehicle.Price * orderDto.Item.Amount,
+                        Year = vehicle.Year
+                    },
+                    TotalPrice = vehicle.Price * orderDto.Item.Amount,
                     Status = OrderStatus.Created,
                     CreatedDate = DateTime.UtcNow,
                     UpdatedDate = DateTime.UtcNow
                 };
-
-                var vehicle = await _catalogService.GetVehicleByIdAsync(orderDto.Item.VehicleExternalId);
-
-                if (vehicle == null)
-                {
-                    _logger.LogInformation("Veículo com ID {VehicleId} não encontrado.", orderDto.Item.VehicleExternalId);
-                    throw new KeyNotFoundException();
-                }
-
-                order.Item = new ItemOrder
-                {
-                    VehicleId = vehicle.Id,
-                    Model = vehicle.Model,
-                    Brand = vehicle.Brand,
-                    Color = vehicle.Color,
-                    Amount = orderDto.Item.Amount,
-                    UnitPrice = vehicle.Price,
-                    TotalPrice = vehicle.Price * orderDto.Item.Amount,
-                    Year = vehicle.Year
-                };
-
-                order.TotalPrice = order.Item.TotalPrice;
 
                 var createdOrder = await _orderRepository.CreateOrderAsync(order);
 
@@ -136,7 +140,7 @@ namespace fiap_order_service.Services
             if (updatedOrder == null)
                 throw new InvalidOperationException("Falha ao atualizar o pedido");
 
-            if (status == "CANCELADO")
+            if (status == OrderStatus.Canceled)
                 await _eventBridgePublisher.PublicarCompraCanceladaAsync(updatedOrder.Id, updatedOrder.Item.VehicleId);
 
             return updatedOrder;
@@ -155,9 +159,9 @@ namespace fiap_order_service.Services
                 {
                     OrderId = order.Id,
                     PaymentMethod = PaymentMethod.CreditCard,
-                    CustomerEmail = order.CustomerEmail,
+                    CustomerEmail = order.Customer.Email,
                     Amount = order.TotalPrice,
-                    Description = $"Pedido {order.Id} - {order.CustomerName} - {order.TotalPrice:C}"
+                    Description = $"Pedido {order.Id} - {order.Customer.FirstName} - {order.TotalPrice:C}"
                 };
 
                 await _sqsClientService.SendMessageAsync(paymentPayLoad);
