@@ -30,7 +30,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\fiap-order-service\fiap-order-service.csproj" />
-    <ProjectReference Include="..\fiap-payment-processor\fiap-payment-processor.csproj" />
   </ItemGroup>
 
   <ItemGroup>
