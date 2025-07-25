@@ -13,16 +13,14 @@ namespace fiap_order_service.Services
         private readonly IOrderRepository _orderRepository;
         private readonly ICatalogService _catalogService;
         private readonly ILogger<OrderService> _logger;
-        private readonly ISqsClientService _sqsClientService;
         private readonly IEventPublisher _eventBridgePublisher;
         private readonly ICustomerService _customerService;
 
-        public OrderService(IOrderRepository orderRepository, ICatalogService catalogService, ILogger<OrderService> logger, ISqsClientService sqsClientService, IEventPublisher eventBridgePublisher, ICustomerService customerService)
+        public OrderService(IOrderRepository orderRepository, ICatalogService catalogService, ILogger<OrderService> logger, IEventPublisher eventBridgePublisher, ICustomerService customerService)
         {
             _orderRepository = orderRepository;
             _catalogService = catalogService;
             _logger = logger;
-            _sqsClientService = sqsClientService;
             _eventBridgePublisher = eventBridgePublisher;
             _customerService = customerService;
         }
@@ -144,33 +142,6 @@ namespace fiap_order_service.Services
                 await _eventBridgePublisher.PublicarCompraCanceladaAsync(updatedOrder.Id, updatedOrder.Item.VehicleId);
 
             return updatedOrder;
-        }
-
-        public async Task SendOrderToPaymentQueue(Order order)
-        {
-            try
-            {
-                _logger.LogInformation("Enviando pedido para a fila de pagamento: {@Order}", order);
-
-                order.Status = OrderStatus.PendingPayment;
-                await _orderRepository.UpdateStatusOrderAsync(order.Id, order);
-
-                var paymentPayLoad = new PaymentPayLoad
-                {
-                    OrderId = order.Id,
-                    PaymentMethod = PaymentMethod.CreditCard,
-                    CustomerEmail = order.Customer.Email,
-                    Amount = order.TotalPrice,
-                    Description = $"Pedido {order.Id} - {order.Customer.FirstName} - {order.TotalPrice:C}"
-                };
-
-                await _sqsClientService.SendMessageAsync(paymentPayLoad);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erro ao enviar pedido para a fila de pagamento: {Message}", ex.Message);
-                throw new InvalidOperationException("Erro ao enviar o pedido para a fila de pagamento", ex);
-            }
         }
     }
 }
