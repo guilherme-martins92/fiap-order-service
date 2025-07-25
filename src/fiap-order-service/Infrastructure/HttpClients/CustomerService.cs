@@ -1,7 +1,9 @@
 ﻿using fiap_order_service.Models;
+using System.Diagnostics.CodeAnalysis;
 
 namespace fiap_order_service.Infrastructure.HttpClients
 {
+    [ExcludeFromCodeCoverage]
     public class CustomerService : ICustomerService
     {
         private readonly HttpClient _httpClient;
