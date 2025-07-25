@@ -28,11 +28,6 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref OrdersTable
-        - Statement:
-            - Effect: Allow
-              Action:
-                - sqs:SendMessage
-              Resource: !GetAtt PaymentProcessingQueue.Arn
       Events:
         ProxyResource:
           Type: HttpApi
@@ -47,27 +42,6 @@ Resources:
             Path: /
             Method: ANY
 
-  FiapPaymentProcessing:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ./src/fiap-payment-processor/
-      Handler: fiap-payment-processor::fiap_payment_processor.Function::FunctionHandler
-      Runtime: dotnet8
-      Description: Lambda function em .NET 8 para processamento assincrono de mensagens da fila PaymentProcessingQueue.
-      Environment:
-        Variables:
-          ORDER_API_URL: "https://rld8zb3bja.execute-api.us-east-1.amazonaws.com"
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        - SQSPollerPolicy:
-            QueueName: !Ref PaymentProcessingQueue
-      Events:
-        SQSEvent:
-          Type: SQS
-          Properties:
-            Queue: !GetAtt PaymentProcessingQueue.Arn
-            BatchSize: 5
-
   # DynamoDB table to store item: {id: &lt;ID&gt;, name: &lt;NAME&gt;}
   OrdersTable:
     Type: AWS::Serverless::SimpleTable
@@ -80,18 +54,6 @@ Resources:
       ProvisionedThroughput:
         ReadCapacityUnits: 2
         WriteCapacityUnits: 2
-
-  PaymentProcessingQueue:
-    Type: AWS::SQS::Queue
-    Description: Fila SQS para processamento de pagamentos.
-    Properties:
-      QueueName: PaymentProcessingQueue
-      VisibilityTimeout: 100
-      MessageRetentionPeriod: 86400
-      ReceiveMessageWaitTimeSeconds: 10
-      RedrivePolicy:
-        deadLetterTargetArn: !GetAtt PaymentProcessingLetterQueue.Arn
-        maxReceiveCount: 5
 
   PaymentProcessingLetterQueue:
     Type: AWS::SQS::Queue
