@@ -20,10 +20,10 @@ namespace fiap_order_service.Infrastructure.EventBridge
         {
             var detail = JsonSerializer.Serialize(new
             {
-                eventType = "CompraCancelada",
-                orderId,
-                vehicleId,             
-                timestamp = DateTime.UtcNow
+                EventType = "CompraCancelada",
+                OrderId = orderId,
+                VehicleId = vehicleId,
+                Timestamp = DateTime.UtcNow
             });
 
             var request = new PutEventsRequest
@@ -44,7 +44,7 @@ namespace fiap_order_service.Infrastructure.EventBridge
 
             if (response.FailedEntryCount > 0)
             {
-                throw new Exception("Falha ao publicar evento CompraCancelada no EventBridge.");
+                throw new InvalidOperationException("Falha ao publicar evento CompraCancelada no EventBridge.");
             }
         }
 
@@ -52,10 +52,10 @@ namespace fiap_order_service.Infrastructure.EventBridge
         {
             var detail = JsonSerializer.Serialize(new
             {
-                eventType = "CompraRealizada",
-                orderId,
-                vehicleId,
-                timestamp = DateTime.UtcNow
+                EventType = "CompraRealizada",
+                OrderId = orderId,
+                VehicleId = vehicleId,
+                Timestamp = DateTime.UtcNow
             });
             var request = new PutEventsRequest
             {
@@ -73,7 +73,7 @@ namespace fiap_order_service.Infrastructure.EventBridge
             var response = await _eventBridge.PutEventsAsync(request);
             if (response.FailedEntryCount > 0)
             {
-                throw new Exception("Falha ao publicar evento CompraRealizada no EventBridge.");
+                throw new InvalidOperationException("Falha ao publicar evento CompraRealizada no EventBridge.");
             }
         }
     }

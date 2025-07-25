@@ -38,7 +38,7 @@ namespace fiap_order_service_tests.Services
             return new Customer
             {
                 Id = Guid.NewGuid(),
-                Document = "12345678900",
+                DocumentNumber = "12345678900",
                 FirstName = "John",
                 LastName = "Doe",
                 Email = "test@test.com",
@@ -48,7 +48,7 @@ namespace fiap_order_service_tests.Services
                 State = "TS",
                 PostalCode = "12345-678",
                 Country = "Test Country",
-                DateOfBirth = new DateTime(1990, 1, 1),
+                DateOfBirth = new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 PhoneNumber = "1234567890"
             };
         }
@@ -252,7 +252,7 @@ namespace fiap_order_service_tests.Services
             Assert.Equal(100, result[0].TotalPrice);
             Assert.Equal(300, result[1].TotalPrice);
             Assert.Equal(customer.Id, result[0].Customer.Id);
-            Assert.Equal(customer.Document, result[0].Customer.Document);
+            Assert.Equal(customer.DocumentNumber, result[0].Customer.DocumentNumber);
             Assert.Equal(customer.FirstName, result[0].Customer.FirstName);
             Assert.Equal(customer.LastName, result[0].Customer.LastName);
             Assert.Equal(customer.Email, result[0].Customer.Email);

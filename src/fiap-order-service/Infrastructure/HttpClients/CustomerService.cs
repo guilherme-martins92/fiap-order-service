@@ -11,7 +11,7 @@ namespace fiap_order_service.Infrastructure.HttpClients
         public CustomerService(IConfiguration configuration, ILogger<CustomerService> logger)
         {
             _httpClient = new HttpClient();
-            _customerApiUrl = "https://localhost:7231";
+            _customerApiUrl = "https://hf8pq28mw9.execute-api.us-east-1.amazonaws.com/";
             _logger = logger;
         }
 
