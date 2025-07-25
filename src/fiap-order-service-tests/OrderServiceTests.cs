@@ -16,7 +16,6 @@ namespace fiap_order_service_tests.Services
         private readonly Mock<IOrderRepository> _orderRepositoryMock;
         private readonly Mock<ICatalogService> _catalogServiceMock;
         private readonly Mock<ILogger<OrderService>> _loggerMock;
-        private readonly Mock<ISqsClientService> _sqsClientServiceMock;
         private readonly Mock<IEventPublisher> _eventPublisherMock;
         private readonly OrderService _orderService;
         private readonly Mock<ICustomerService> _customerServiceMock;
@@ -26,11 +25,10 @@ namespace fiap_order_service_tests.Services
             _orderRepositoryMock = new Mock<IOrderRepository>();
             _catalogServiceMock = new Mock<ICatalogService>();
             _loggerMock = new Mock<ILogger<OrderService>>();
-            _sqsClientServiceMock = new Mock<ISqsClientService>();
             _eventPublisherMock = new Mock<IEventPublisher>();
             _customerServiceMock = new Mock<ICustomerService>();
 
-            _orderService = new OrderService(_orderRepositoryMock.Object, _catalogServiceMock.Object, _loggerMock.Object, _sqsClientServiceMock.Object, _eventPublisherMock.Object, _customerServiceMock.Object);
+            _orderService = new OrderService(_orderRepositoryMock.Object, _catalogServiceMock.Object, _loggerMock.Object, _eventPublisherMock.Object, _customerServiceMock.Object);
         }
 
         private Customer BuildCustomer()
@@ -263,7 +261,7 @@ namespace fiap_order_service_tests.Services
             Assert.Equal(customer.City, result[0].Customer.City);
             Assert.Equal(customer.State, result[0].Customer.State);
             Assert.Equal(customer.PostalCode, result[0].Customer.PostalCode);
-            Assert.Equal(customer.Country, result[0].Customer.Country);         
+            Assert.Equal(customer.Country, result[0].Customer.Country);
         }
 
         [Fact]
@@ -431,122 +429,6 @@ namespace fiap_order_service_tests.Services
 
             // Act & Assert
             await Assert.ThrowsAsync<KeyNotFoundException>(() => _orderService.UpdateStatusOrderAsync(orderId, "Completed"));
-        }
-
-        [Fact]
-        public async Task SendOrderToPaymentQueue_ShouldUpdateStatusAndSendMessage_WhenOrderIsValid()
-        {
-            // Arrange
-            var customer = BuildCustomer();
-            var order = new Order
-            {
-                Id = Guid.NewGuid(),
-                Customer = customer,
-                Status = OrderStatus.Created,
-                TotalPrice = 50000m,
-                Item = new ItemOrder
-                {
-                    VehicleId = Guid.NewGuid(),
-                    Model = "Model S",
-                    Brand = "Tesla",
-                    Color = "White",
-                    Year = 2021,
-                    Amount = 1,
-                    UnitPrice = 50000m,
-                    TotalPrice = 50000m
-                },
-                CreatedDate = DateTime.UtcNow
-            };
-
-            _orderRepositoryMock
-                .Setup(x => x.UpdateStatusOrderAsync(order.Id, It.IsAny<Order>()))
-                .ReturnsAsync((Guid id, Order o) => o);
-
-            _sqsClientServiceMock
-                .Setup(x => x.SendMessageAsync(It.IsAny<PaymentPayLoad>()))
-                .Returns(Task.CompletedTask)
-                .Verifiable();
-
-            // Act
-            await _orderService.SendOrderToPaymentQueue(order);
-
-            // Assert
-            _orderRepositoryMock.Verify(x => x.UpdateStatusOrderAsync(order.Id, It.Is<Order>(o => o.Status == OrderStatus.PendingPayment)), Times.Once);
-            _sqsClientServiceMock.Verify(x => x.SendMessageAsync(It.Is<PaymentPayLoad>(p =>
-                p.OrderId == order.Id &&
-                p.PaymentMethod == PaymentMethod.CreditCard &&
-                p.CustomerEmail == order.Customer.Email &&
-                p.Amount == order.TotalPrice &&
-                p.Description.Contains(order.Customer.FirstName)
-            )), Times.Once);
-        }
-
-        [Fact]
-        public async Task SendOrderToPaymentQueue_ShouldThrowInvalidOperationException_WhenRepositoryThrows()
-        {
-            // Arrange
-            var order = new Order
-            {
-                Id = Guid.NewGuid(),
-                Customer = BuildCustomer(),
-                Status = OrderStatus.Created,
-                TotalPrice = 50000m,
-                Item = new ItemOrder
-                {
-                    VehicleId = Guid.NewGuid(),
-                    Model = "Model S",
-                    Brand = "Tesla",
-                    Color = "White",
-                    Year = 2021,
-                    Amount = 1,
-                    UnitPrice = 50000m,
-                    TotalPrice = 50000m
-                },
-                CreatedDate = DateTime.UtcNow
-            };
-
-            _orderRepositoryMock
-                .Setup(x => x.UpdateStatusOrderAsync(order.Id, It.IsAny<Order>()))
-                .ThrowsAsync(new Exception("Repository error"));
-
-            // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() => _orderService.SendOrderToPaymentQueue(order));
-        }
-
-        [Fact]
-        public async Task SendOrderToPaymentQueue_ShouldThrowInvalidOperationException_WhenSqsClientThrows()
-        {
-            // Arrange
-            var order = new Order
-            {
-                Id = Guid.NewGuid(),
-                Customer = BuildCustomer(),
-                Status = OrderStatus.Created,
-                TotalPrice = 50000m,
-                Item = new ItemOrder
-                {
-                    VehicleId = Guid.NewGuid(),
-                    Model = "Model S",
-                    Brand = "Tesla",
-                    Color = "White",
-                    Year = 2021,
-                    Amount = 1,
-                    UnitPrice = 50000m,
-                    TotalPrice = 50000m
-                },
-                CreatedDate = DateTime.UtcNow
-            };
-
-            _orderRepositoryMock
-                .Setup(x => x.UpdateStatusOrderAsync(order.Id, It.IsAny<Order>()))
-                .ReturnsAsync(order);
-
-            _sqsClientServiceMock
-                .Setup(x => x.SendMessageAsync(It.IsAny<PaymentPayLoad>()))
-                .ThrowsAsync(new Exception("SQS error"));
-
-            // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() => _orderService.SendOrderToPaymentQueue(order));
         }
     }
 }
