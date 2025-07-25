@@ -6,12 +6,10 @@ namespace fiap_order_service.Models
     public class Order
     {
         public Guid Id { get; set; }
-        public required string CustomerDocument { get; set; }
-        public required string CustomerName { get; set; }
-        public required string CustomerEmail { get; set; }
+        public required Customer Customer { get; set; }
         public required string Status { get; set; }
-        public decimal TotalPrice { get; set; }        
-        public ItemOrder? Item { get; set; }
+        public decimal TotalPrice { get; set; }
+        public required ItemOrder Item { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime? UpdatedDate { get; set; }
     }

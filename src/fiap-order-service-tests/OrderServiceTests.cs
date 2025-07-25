@@ -19,6 +19,7 @@ namespace fiap_order_service_tests.Services
         private readonly Mock<ISqsClientService> _sqsClientServiceMock;
         private readonly Mock<IEventPublisher> _eventPublisherMock;
         private readonly OrderService _orderService;
+        private readonly Mock<ICustomerService> _customerServiceMock;
 
         public OrderServiceTests()
         {
@@ -27,8 +28,29 @@ namespace fiap_order_service_tests.Services
             _loggerMock = new Mock<ILogger<OrderService>>();
             _sqsClientServiceMock = new Mock<ISqsClientService>();
             _eventPublisherMock = new Mock<IEventPublisher>();
+            _customerServiceMock = new Mock<ICustomerService>();
 
-            _orderService = new OrderService(_orderRepositoryMock.Object, _catalogServiceMock.Object, _loggerMock.Object, _sqsClientServiceMock.Object, _eventPublisherMock.Object);
+            _orderService = new OrderService(_orderRepositoryMock.Object, _catalogServiceMock.Object, _loggerMock.Object, _sqsClientServiceMock.Object, _eventPublisherMock.Object, _customerServiceMock.Object);
+        }
+
+        private Customer BuildCustomer()
+        {
+            return new Customer
+            {
+                Id = Guid.NewGuid(),
+                DocumentNumber = "12345678900",
+                FirstName = "John",
+                LastName = "Doe",
+                Email = "test@test.com",
+                Street = "123 Main St",
+                HouseNumber = "456",
+                City = "Test City",
+                State = "TS",
+                PostalCode = "12345-678",
+                Country = "Test Country",
+                DateOfBirth = new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                PhoneNumber = "1234567890"
+            };
         }
 
         [Fact]
@@ -36,11 +58,14 @@ namespace fiap_order_service_tests.Services
         {
             // Arrange
             var vehicleId = Guid.NewGuid();
+            var customer = BuildCustomer();
+
             var orderDto = new OrderDto
             {
-                CustomerDocument = "12345678900",
-                CustomerName = "John Doe",
-                CustomerEmail = "john@doe.com",
+                Customer = new CustomerDto
+                {
+                    Id = customer.Id,
+                },
                 Item = new ItemOrderDto
                 {
                     VehicleExternalId = vehicleId,
@@ -60,14 +85,29 @@ namespace fiap_order_service_tests.Services
 
             _catalogServiceMock.Setup(x => x.GetVehicleByIdAsync(vehicleId)).ReturnsAsync(vehicle);
             _orderRepositoryMock.Setup(x => x.CreateOrderAsync(It.IsAny<Order>())).ReturnsAsync((Order o) => o);
+            _customerServiceMock.Setup(x => x.GetCustomerByIdAsync(orderDto.Customer.Id)).ReturnsAsync(customer);
 
             // Act
             var result = await _orderService.CreateOrderAsync(orderDto);
 
             // Assert
             Assert.NotNull(result);
-            Assert.Equal(orderDto.CustomerDocument, result.CustomerDocument);
-            Assert.Equal(vehicleId, result.Item!.VehicleId);
+            Assert.Equal(orderDto.Customer.Id, result.Customer.Id);
+            Assert.Equal(customer.FirstName, customer.FirstName);
+            Assert.Equal(customer.LastName, customer.LastName);
+            Assert.Equal(customer.Email, customer.Email);
+            Assert.Equal(customer.DateOfBirth, customer.DateOfBirth);
+            Assert.Equal(customer.PhoneNumber, customer.PhoneNumber);
+            Assert.Equal(customer.Street, customer.Street);
+            Assert.Equal(customer.HouseNumber, customer.HouseNumber);
+            Assert.Equal(customer.City, customer.City);
+            Assert.Equal(customer.State, customer.State);
+            Assert.Equal(customer.PostalCode, customer.PostalCode);
+            Assert.Equal(customer.Country, customer.Country);
+
+            Assert.Equal(OrderStatus.Created, result.Status);
+            Assert.NotNull(result.Item);
+            Assert.Equal(vehicleId, result.Item.VehicleId);
             Assert.Equal(200000m, result.TotalPrice);
             _eventPublisherMock.Verify(x => x.PublicarCompraRealizadaAsync(result.Id, vehicleId), Times.Once);
         }
@@ -79,9 +119,10 @@ namespace fiap_order_service_tests.Services
             var vehicleId = Guid.NewGuid();
             var orderDto = new OrderDto
             {
-                CustomerDocument = "12345678900",
-                CustomerName = "John Doe",
-                CustomerEmail = "john@doe.com",
+                Customer = new CustomerDto
+                {
+                    Id = Guid.NewGuid()
+                },
                 Item = new ItemOrderDto
                 {
                     VehicleExternalId = vehicleId,
@@ -96,15 +137,51 @@ namespace fiap_order_service_tests.Services
         }
 
         [Fact]
+        public async Task CreateOrderAsync_ShouldThrowKeyNotFoundException_WhenCustomerNotFound()
+        {
+            // Arrange
+            var vehicleId = Guid.NewGuid();
+            var orderDto = new OrderDto
+            {
+                Customer = new CustomerDto
+                {
+                    Id = Guid.NewGuid()
+                },
+                Item = new ItemOrderDto
+                {
+                    VehicleExternalId = vehicleId,
+                    Amount = 1
+                }
+            };
+
+            var vehicle = new Vehicle
+            {
+                Id = vehicleId,
+                Model = "Model S",
+                Brand = "Tesla",
+                Color = "White",
+                Year = 2021,
+                Price = 80000m
+            };
+
+            _catalogServiceMock.Setup(x => x.GetVehicleByIdAsync(vehicleId)).ReturnsAsync(vehicle);
+            _customerServiceMock.Setup(x => x.GetCustomerByIdAsync(orderDto.Customer.Id)).ReturnsAsync((Customer?)null);
+
+            // Act & Assert
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => _orderService.CreateOrderAsync(orderDto));
+        }
+
+        [Fact]
         public async Task CreateOrderAsync_ShouldThrowInvalidOperationException_WhenRepositoryReturnsNull()
         {
             // Arrange
             var vehicleId = Guid.NewGuid();
             var orderDto = new OrderDto
             {
-                CustomerDocument = "12345678900",
-                CustomerName = "John Doe",
-                CustomerEmail = "john@doe.com",
+                Customer = new CustomerDto
+                {
+                    Id = Guid.NewGuid()
+                },
                 Item = new ItemOrderDto
                 {
                     VehicleExternalId = vehicleId,
@@ -126,7 +203,7 @@ namespace fiap_order_service_tests.Services
             _orderRepositoryMock.Setup(x => x.CreateOrderAsync(It.IsAny<Order>())).ReturnsAsync((Order?)null);
 
             // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() => _orderService.CreateOrderAsync(orderDto));
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => _orderService.CreateOrderAsync(orderDto));
         }
 
         [Fact]
@@ -157,11 +234,14 @@ namespace fiap_order_service_tests.Services
                 TotalPrice = 100000m
             };
 
+            var customer = BuildCustomer();
+
             var orders = new List<Order>
             {
-                new Order { Id = Guid.NewGuid(), CustomerDocument = "1", CustomerName = "A", CustomerEmail = "a@a.com", Status = "Created", TotalPrice = 300,Item = ItemOrder1, CreatedDate = DateTime.UtcNow },
-                new Order { Id = Guid.NewGuid(), CustomerDocument = "2", CustomerName = "B", CustomerEmail = "b@b.com", Status = "Created", TotalPrice = 100, Item = ItemOrder2, CreatedDate = DateTime.UtcNow }
+                new Order { Customer = customer, Status = "Created", TotalPrice = 300,Item = ItemOrder1, CreatedDate = DateTime.UtcNow },
+                new Order { Customer = customer, Status = "Created", TotalPrice = 100, Item = ItemOrder2, CreatedDate = DateTime.UtcNow }
             };
+
             _orderRepositoryMock.Setup(x => x.GetAllOrdersAsync()).ReturnsAsync(orders);
 
             // Act
@@ -171,6 +251,19 @@ namespace fiap_order_service_tests.Services
             Assert.Equal(2, result.Count);
             Assert.Equal(100, result[0].TotalPrice);
             Assert.Equal(300, result[1].TotalPrice);
+            Assert.Equal(customer.Id, result[0].Customer.Id);
+            Assert.Equal(customer.DocumentNumber, result[0].Customer.DocumentNumber);
+            Assert.Equal(customer.FirstName, result[0].Customer.FirstName);
+            Assert.Equal(customer.LastName, result[0].Customer.LastName);
+            Assert.Equal(customer.Email, result[0].Customer.Email);
+            Assert.Equal(customer.DateOfBirth, result[0].Customer.DateOfBirth);
+            Assert.Equal(customer.PhoneNumber, result[0].Customer.PhoneNumber);
+            Assert.Equal(customer.Street, result[0].Customer.Street);
+            Assert.Equal(customer.HouseNumber, result[0].Customer.HouseNumber);
+            Assert.Equal(customer.City, result[0].Customer.City);
+            Assert.Equal(customer.State, result[0].Customer.State);
+            Assert.Equal(customer.PostalCode, result[0].Customer.PostalCode);
+            Assert.Equal(customer.Country, result[0].Customer.Country);         
         }
 
         [Fact]
@@ -192,12 +285,12 @@ namespace fiap_order_service_tests.Services
         {
             // Arrange
             var orderId = Guid.NewGuid();
+            var customer = BuildCustomer();
+
             var order = new Order
             {
                 Id = orderId,
-                CustomerDocument = "1",
-                CustomerName = "A",
-                CustomerEmail = "a@a.com",
+                Customer = customer,
                 Status = "Created",
                 TotalPrice = 100,
                 Item = new ItemOrder
@@ -222,6 +315,7 @@ namespace fiap_order_service_tests.Services
             // Assert
             Assert.NotNull(result);
             Assert.Equal(orderId, result.Id);
+            Assert.Equal(customer.Id, result.Customer.Id);
         }
 
         [Fact]
@@ -243,12 +337,11 @@ namespace fiap_order_service_tests.Services
         {
             // Arrange
             var orderId = Guid.NewGuid();
+            var customer = BuildCustomer();
             var order = new Order
             {
                 Id = orderId,
-                CustomerDocument = "1",
-                CustomerName = "A",
-                CustomerEmail = "a@a.com",
+                Customer = customer,
                 Status = "Created",
                 TotalPrice = 100,
                 Item = new ItemOrder
@@ -281,12 +374,11 @@ namespace fiap_order_service_tests.Services
         {
             // Arrange
             var orderId = Guid.NewGuid();
+            var customer = BuildCustomer();
             var order = new Order
             {
                 Id = orderId,
-                CustomerDocument = "1",
-                CustomerName = "A",
-                CustomerEmail = "a@a.com",
+                Customer = customer,
                 Status = "CANCELADO",
                 TotalPrice = 100,
                 Item = new ItemOrder
@@ -345,12 +437,11 @@ namespace fiap_order_service_tests.Services
         public async Task SendOrderToPaymentQueue_ShouldUpdateStatusAndSendMessage_WhenOrderIsValid()
         {
             // Arrange
+            var customer = BuildCustomer();
             var order = new Order
             {
                 Id = Guid.NewGuid(),
-                CustomerDocument = "12345678900",
-                CustomerName = "John Doe",
-                CustomerEmail = "john@doe.com",
+                Customer = customer,
                 Status = OrderStatus.Created,
                 TotalPrice = 50000m,
                 Item = new ItemOrder
@@ -384,9 +475,9 @@ namespace fiap_order_service_tests.Services
             _sqsClientServiceMock.Verify(x => x.SendMessageAsync(It.Is<PaymentPayLoad>(p =>
                 p.OrderId == order.Id &&
                 p.PaymentMethod == PaymentMethod.CreditCard &&
-                p.CustomerEmail == order.CustomerEmail &&
+                p.CustomerEmail == order.Customer.Email &&
                 p.Amount == order.TotalPrice &&
-                p.Description.Contains(order.CustomerName)
+                p.Description.Contains(order.Customer.FirstName)
             )), Times.Once);
         }
 
@@ -397,9 +488,7 @@ namespace fiap_order_service_tests.Services
             var order = new Order
             {
                 Id = Guid.NewGuid(),
-                CustomerDocument = "12345678900",
-                CustomerName = "John Doe",
-                CustomerEmail = "john@doe.com",
+                Customer = BuildCustomer(),
                 Status = OrderStatus.Created,
                 TotalPrice = 50000m,
                 Item = new ItemOrder
@@ -431,9 +520,7 @@ namespace fiap_order_service_tests.Services
             var order = new Order
             {
                 Id = Guid.NewGuid(),
-                CustomerDocument = "12345678900",
-                CustomerName = "John Doe",
-                CustomerEmail = "john@doe.com",
+                Customer = BuildCustomer(),
                 Status = OrderStatus.Created,
                 TotalPrice = 50000m,
                 Item = new ItemOrder
