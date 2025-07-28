@@ -50,26 +50,31 @@ namespace fiap_order_service.Infrastructure.EventBridge
 
         public async Task PublicarCompraRealizadaAsync(Guid orderId, Guid vehicleId)
         {
-            var detail = JsonSerializer.Serialize(new
+            var detailObject = new
             {
                 EventType = "CompraRealizada",
-                OrderId = orderId,
-                VehicleId = vehicleId,
+                ReserveVehicleDto = new
+                {
+                    OrderId = orderId,
+                    VehicleId = vehicleId
+                },
                 Timestamp = DateTime.UtcNow
-            });
+            };
+
             var request = new PutEventsRequest
             {
                 Entries = new List<PutEventsRequestEntry>
-            {
-                new()
                 {
-                    Detail = detail,
-                    DetailType = "CompraRealizada",
-                    Source = "ms.compras",
-                    EventBusName = EventBusName
+                    new()
+                    {
+                        Detail = JsonSerializer.Serialize(detailObject),
+                        DetailType = "CompraRealizada",
+                        Source = "ms.compras",
+                        EventBusName = EventBusName
+                    }
                 }
-            }
             };
+
             var response = await _eventBridge.PutEventsAsync(request);
             if (response.FailedEntryCount > 0)
             {
