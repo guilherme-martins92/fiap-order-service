@@ -39,7 +39,7 @@ public class Function
                     context.Logger.LogError($"Failed to deserialize 'detail' for message ID: {record.MessageId}");
                     continue;
                 }
-
+          
                 var requestUri = $"https://rld8zb3bja.execute-api.us-east-1.amazonaws.com/orders/{orderUpdateStatusDto.OrderId}?status={orderUpdateStatusDto.Status}";
 
                 var response = await _httpClient.PutAsync(requestUri, null);
