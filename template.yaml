@@ -42,6 +42,23 @@ Resources:
             Path: /
             Method: ANY
 
+  PaymentCreatorFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: ./src/fiap-order-payment-consumer/
+      Handler: fiap-order-payment-consumer::fiap_order_payment_consumer.Function::FunctionHandler
+      Runtime: dotnet8
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - SQSPollerPolicy:
+            QueueName: Queue-Pedidos-PagamentoCriado
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: arn:aws:sqs:us-east-1:891377307312:Queue-Pedidos-PagamentoCriado
+            BatchSize: 5
+
   # DynamoDB table to store item: {id: &lt;ID&gt;, name: &lt;NAME&gt;}
   OrdersTable:
     Type: AWS::Serverless::SimpleTable
