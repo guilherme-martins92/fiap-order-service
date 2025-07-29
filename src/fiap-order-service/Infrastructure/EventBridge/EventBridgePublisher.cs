@@ -1,5 +1,6 @@
 ﻿using Amazon.EventBridge;
 using Amazon.EventBridge.Model;
+using fiap_order_service.Constants;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
@@ -21,8 +22,12 @@ namespace fiap_order_service.Infrastructure.EventBridge
             var detail = JsonSerializer.Serialize(new
             {
                 EventType = "CompraCancelada",
-                OrderId = orderId,
-                VehicleId = vehicleId,
+                ReserveVehicleDto = new
+                {
+                    OrderId = orderId,
+                    VehicleId = vehicleId,
+                    Status = OrderStatus.Canceled
+                },                
                 Timestamp = DateTime.UtcNow
             });
 
@@ -56,7 +61,8 @@ namespace fiap_order_service.Infrastructure.EventBridge
                 ReserveVehicleDto = new
                 {
                     OrderId = orderId,
-                    VehicleId = vehicleId
+                    VehicleId = vehicleId,
+                    Status = OrderStatus.Created,
                 },
                 Timestamp = DateTime.UtcNow
             };
