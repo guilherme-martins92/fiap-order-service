@@ -4,6 +4,7 @@
     {
         public const string Created = "CRIADO";
         public const string PendingPayment = "PENDENTE DE PAGAMENTO";
+        public const string PaymentFailed = "PAGAMENTO FALHOU";
         public const string Completed = "PAGO";
         public const string Canceled = "CANCELADO";        
     }
