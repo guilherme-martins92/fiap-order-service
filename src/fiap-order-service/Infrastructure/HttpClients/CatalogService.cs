@@ -13,7 +13,7 @@ namespace fiap_order_service.Infrastructure.HttpClients
         public CatalogService(IConfiguration configuration, ILogger<CatalogService> logger)
         {
             _httpClient = new HttpClient();
-            _catalogApiUrl = Environment.GetEnvironmentVariable("CatalogApiUrl") ?? configuration.GetSection("ApiSettings")["CatalogApiUrl"];
+            _catalogApiUrl = "https://qck4zlo8gl.execute-api.us-east-1.amazonaws.com";
             _logger = logger;
         }
 
